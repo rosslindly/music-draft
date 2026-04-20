@@ -2,9 +2,11 @@
 import { logout } from './session.js';
 import { getTopArtists, getArtistsByIds, MOCK_MEMBERS } from './data.js';
 import { saveLineup, getLineup, clearLineup, scoreLineup } from './scoring.js';
-import { renderWelcome, renderLeague, renderDraft, renderScore, renderLoading } from './ui.js';
+import { renderWelcome, renderOnboarding, renderLeague, renderDraft, renderScore, renderLoading } from './ui.js';
 
 let welcomeSeen = false;
+let onboardingDone = false;
+let userProfile = null;
 let leagueJoined = false;
 
 const MOCK_LEAGUE = {
@@ -21,11 +23,19 @@ async function main() {
     return;
   }
 
+  if (!onboardingDone) {
+    renderOnboarding(
+      (profile) => { onboardingDone = true; userProfile = profile; main(); },
+      () => { welcomeSeen = false; main(); },
+    );
+    return;
+  }
+
   if (!leagueJoined) {
     renderLeague(
       MOCK_LEAGUE,
       () => { leagueJoined = true; main(); },
-      () => { welcomeSeen = false; main(); },
+      () => { onboardingDone = false; main(); },
     );
     return;
   }
@@ -65,19 +75,19 @@ async function showScore(lineup) {
     memberStandings = MOCK_MEMBERS.map(m => {
       const live = m.lineup.map(a => liveById[a.id]).filter(Boolean);
       const { totalPoints: pts } = scoreLineup(m.lineup, live);
-      return { name: m.name, picks: m.lineup, totalPoints: pts };
+      return { handle: m.handle, picks: m.lineup, totalPoints: pts };
     });
   } else {
     renderLoading('Loading lineup…');
     results = lineup.map(a => ({ id: a.id, name: a.name, points: 0, change: 0, popularityThen: a.popularity, popularityNow: a.popularity, savedAt: a.savedAt }));
     totalPoints = 0;
-    memberStandings = MOCK_MEMBERS.map(m => ({ name: m.name, picks: m.lineup, totalPoints: 0 }));
+    memberStandings = MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
     // small delay so the loading state is visible briefly
     await new Promise(r => setTimeout(r, 200));
   }
 
   const standings = [
-    { name: 'You', picks: results, totalPoints, isYou: true },
+    { handle: userProfile?.handle ?? '@you', picks: results, totalPoints, isYou: true },
     ...memberStandings,
   ];
   if (leagueStarted) standings.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -88,7 +98,7 @@ async function showScore(lineup) {
     standings,
     league: MOCK_LEAGUE,
     leagueStarted,
-    onNewDraft() { clearLineup(); welcomeSeen = false; leagueJoined = false; main(); },
+    onNewDraft() { clearLineup(); welcomeSeen = false; onboardingDone = false; userProfile = null; leagueJoined = false; main(); },
     onLogout() { logout(); clearLineup(); main(); },
   });
 }

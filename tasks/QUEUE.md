@@ -4,6 +4,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 
 ## Backlog
 
+- [x] onboarding-screen.md     Profile photo, handle, and Spotify connect screen between Welcome and Join League
 - [ ] linting-setup.md         Add ESLint + Prettier with shared config
 - [ ] vitest-setup.md          Configure Vitest as the test framework
 - [ ] scoring-unit-tests.md    Unit tests for scoring.js point logic

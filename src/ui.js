@@ -94,6 +94,139 @@ export function renderWelcome(onStart) {
   document.getElementById('welcome-start-btn').addEventListener('click', onStart);
 }
 
+// --- Onboarding View ---
+
+export function renderOnboarding(onContinue, onBack) {
+  app.innerHTML = `
+    <div class="view view-onboarding">
+      <div class="onboarding-card">
+        <button class="btn-back" id="onboarding-back-btn">← Back</button>
+
+        <div class="onboarding-header">
+          <div class="onboarding-step-label">Almost there</div>
+          <h1 class="onboarding-title">Set up your profile</h1>
+          <p class="onboarding-sub">Choose how you'll appear to other players in standings.</p>
+        </div>
+
+        <div class="onboarding-photo-wrap">
+          <div class="onboarding-photo" id="onboarding-photo" role="button" tabindex="0" aria-label="Upload profile photo">
+            <svg class="onboarding-photo-placeholder" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="24" cy="18" r="8" stroke="#7c3aed" stroke-width="2"/>
+              <path d="M8 42c0-8.837 7.163-14 16-14s16 5.163 16 14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="onboarding-photo-overlay">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="flex-shrink:0">
+                <path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+              </svg>
+              Upload photo
+            </div>
+          </div>
+          <input type="file" id="photo-input" accept="image/*" style="display:none" />
+          <p class="onboarding-photo-hint">Optional · Tap to upload</p>
+        </div>
+
+        <div class="onboarding-field">
+          <label class="onboarding-label" for="handle-input">Your handle</label>
+          <div class="onboarding-handle-wrap">
+            <span class="onboarding-at">@</span>
+            <input
+              type="text"
+              id="handle-input"
+              class="onboarding-handle-input"
+              placeholder="placeholdername"
+              maxlength="24"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <p class="onboarding-field-hint">Letters, numbers, and underscores only.</p>
+        </div>
+
+        <div class="onboarding-spotify-section">
+          <div class="onboarding-label">Spotify</div>
+          <button class="onboarding-spotify-btn" id="spotify-connect-btn">
+            <svg class="onboarding-spotify-logo" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.208c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.18.388.565.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.519-.972c3.632-1.102 8.147-.568 11.234 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.376 8.775 6.227 9.71a.937.937 0 11-.543-1.795c3.6-1.09 9.587-.879 13.372 1.341a.937.937 0 01-.142 1.611z"/>
+            </svg>
+            Connect Spotify
+          </button>
+          <p class="onboarding-field-hint">Optional · Builds your draft pool from your listening history.</p>
+        </div>
+
+        <button class="btn-primary onboarding-continue-btn" id="onboarding-continue-btn" disabled>Continue →</button>
+      </div>
+    </div>
+  `;
+
+  const photoEl = document.getElementById('onboarding-photo');
+  const photoInput = document.getElementById('photo-input');
+  const handleInput = document.getElementById('handle-input');
+  const continueBtn = document.getElementById('onboarding-continue-btn');
+  const spotifyBtn = document.getElementById('spotify-connect-btn');
+
+  let photoDataUrl = null;
+  let spotifyConnected = false;
+
+  function updateContinue() {
+    continueBtn.disabled = handleInput.value.trim().length < 2 || !spotifyConnected;
+  }
+
+  // Photo upload
+  photoEl.addEventListener('click', () => photoInput.click());
+  photoEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') photoInput.click(); });
+  photoInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      photoDataUrl = ev.target.result;
+      photoEl.style.backgroundImage = `url(${photoDataUrl})`;
+      photoEl.style.backgroundSize = 'cover';
+      photoEl.style.backgroundPosition = 'center';
+      photoEl.classList.add('has-photo');
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Handle — alphanumeric + underscore only
+  handleInput.addEventListener('input', () => {
+    handleInput.value = handleInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+    updateContinue();
+  });
+
+  // Spotify (stubbed)
+  spotifyBtn.addEventListener('click', () => {
+    spotifyConnected = !spotifyConnected;
+    updateContinue();
+    if (spotifyConnected) {
+      spotifyBtn.classList.add('spotify-connected');
+      spotifyBtn.innerHTML = `
+        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="flex-shrink:0">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+        </svg>
+        Spotify Connected
+      `;
+    } else {
+      spotifyConnected = false;
+      spotifyBtn.classList.remove('spotify-connected');
+      spotifyBtn.innerHTML = `
+        <svg class="onboarding-spotify-logo" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.208c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.18.388.565.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.519-.972c3.632-1.102 8.147-.568 11.234 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.376 8.775 6.227 9.71a.937.937 0 11-.543-1.795c3.6-1.09 9.587-.879 13.372 1.341a.937.937 0 01-.142 1.611z"/>
+        </svg>
+        Connect Spotify
+      `;
+    }
+  });
+
+  document.getElementById('onboarding-back-btn').addEventListener('click', onBack);
+
+  continueBtn.addEventListener('click', () => {
+    const handle = handleInput.value.trim();
+    if (handle.length < 2) return;
+    onContinue({ handle: `@${handle}`, photo: photoDataUrl, spotifyConnected });
+  });
+}
+
 // --- League View ---
 
 export function renderLeague(league, onJoin, onBack) {
@@ -288,7 +421,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
             ${standings.map((entry, i) => `
               <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
                 <span class="standings-rank">${leagueStarted ? i + 1 : '—'}</span>
-                <span class="standings-name">${escapeHtml(entry.name)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
+                <span class="standings-name">${escapeHtml(entry.handle)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
                 <div class="standings-picks">
                   ${entry.picks.map(p => `
                     <div class="standings-avatar" style="background:${artistColor(p.id)}" title="${escapeHtml(p.name)}">${escapeHtml(initials(p.name))}</div>

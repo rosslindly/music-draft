@@ -146,6 +146,195 @@ a:hover { text-decoration: underline; }
   color: var(--text-muted);
 }
 
+/* === Onboarding === */
+.view-onboarding {
+  background: radial-gradient(ellipse at 50% -10%, #1a0a40 0%, var(--bg) 65%);
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 40px 36px 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.onboarding-header { margin-bottom: 28px; }
+
+.onboarding-step-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.onboarding-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.onboarding-sub {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Photo upload */
+.onboarding-photo-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.onboarding-photo {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: rgba(124, 58, 237, 0.1);
+  border: 2px dashed rgba(124, 58, 237, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.onboarding-photo:hover { border-color: var(--accent); background: rgba(124, 58, 237, 0.16); }
+.onboarding-photo:hover .onboarding-photo-overlay { opacity: 1; }
+.onboarding-photo.has-photo { border-style: solid; border-color: var(--accent); }
+.onboarding-photo.has-photo .onboarding-photo-placeholder { display: none; }
+.onboarding-photo.has-photo:hover .onboarding-photo-overlay { opacity: 1; }
+
+.onboarding-photo-placeholder { width: 40px; height: 40px; flex-shrink: 0; }
+
+.onboarding-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: white;
+  text-align: center;
+}
+
+.onboarding-photo-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* Handle field */
+.onboarding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.onboarding-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  margin-bottom: 2px;
+}
+
+.onboarding-handle-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.onboarding-handle-wrap:focus-within { border-color: var(--accent); }
+
+.onboarding-at {
+  padding: 0 10px 0 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.onboarding-handle-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 12px 14px 12px 0;
+  min-width: 0;
+  font-family: inherit;
+}
+
+.onboarding-handle-input::placeholder { color: var(--text-muted); font-weight: 400; }
+
+.onboarding-field-hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+/* Spotify section */
+.onboarding-spotify-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.onboarding-spotify-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 18px;
+  background: #1db954;
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  align-self: flex-start;
+}
+
+.onboarding-spotify-btn:hover { background: #17a349; }
+.onboarding-spotify-btn.spotify-connected { background: var(--bg-card-2); border: 1px solid #1db954; color: #1db954; }
+.onboarding-spotify-btn.spotify-connected:hover { background: rgba(29, 185, 84, 0.08); }
+
+.onboarding-continue-btn { max-width: 100%; }
+
+@media (max-width: 600px) {
+  .onboarding-card { padding: 32px 20px 28px; }
+  .onboarding-title { font-size: 1.35rem; }
+}
+
 /* === League === */
 .view-league {
   background: radial-gradient(ellipse at 50% -10%, #1a0a40 0%, var(--bg) 65%);

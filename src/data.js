@@ -36,6 +36,7 @@ const ARTISTS = [
 export const MOCK_MEMBERS = [
   {
     name: 'Jordan K.',
+    handle: '@jordanbeats',
     lineup: [
       { id: 'a01', name: 'Taylor Swift',      popularity: 98 },
       { id: 'a05', name: 'Chappell Roan',     popularity: 88 },
@@ -46,6 +47,7 @@ export const MOCK_MEMBERS = [
   },
   {
     name: 'Alex R.',
+    handle: '@alexr',
     lineup: [
       { id: 'a02', name: 'Kendrick Lamar',    popularity: 94 },
       { id: 'a07', name: 'Tyler, the Creator',popularity: 86 },
@@ -55,6 +57,7 @@ export const MOCK_MEMBERS = [
   },
   {
     name: 'Sam T.',
+    handle: '@samt',
     lineup: [
       { id: 'a03', name: 'Sabrina Carpenter', popularity: 92 },
       { id: 'a06', name: 'SZA',              popularity: 88 },
@@ -65,6 +68,7 @@ export const MOCK_MEMBERS = [
   },
   {
     name: 'Priya M.',
+    handle: '@priyam',
     lineup: [
       { id: 'a04', name: 'Billie Eilish',     popularity: 90 },
       { id: 'a10', name: 'Doechii',           popularity: 83 },
@@ -75,6 +79,7 @@ export const MOCK_MEMBERS = [
   },
   {
     name: 'Casey L.',
+    handle: '@caseyl',
     lineup: [
       { id: 'a08', name: 'Bad Bunny',         popularity: 85 },
       { id: 'a13', name: 'Hozier',            popularity: 80 },
@@ -85,6 +90,7 @@ export const MOCK_MEMBERS = [
   },
   {
     name: 'Dev O.',
+    handle: '@devo',
     lineup: [
       { id: 'a02', name: 'Kendrick Lamar',    popularity: 94 },
       { id: 'a05', name: 'Chappell Roan',     popularity: 88 },
