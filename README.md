@@ -1,6 +1,18 @@
-# Listener Portfolio
+# Music Draft
 
-Scores your Spotify listening history like an angel investor portfolio. Early conviction in artists that later blew up = high ROI.
+Fantasy sports for music fans. Draft artists from your Spotify listening history, then score points as their popularity rises.
+
+## How it works
+
+1. **Join a league** — enter a league with friends (or mock members for now)
+2. **Draft your roster** — pick artists from your Spotify top artists
+3. **Score points** — each artist earns points based on daily popularity changes:
+   - +3 points if popularity went up
+   - +1 point if popularity held steady
+   - 0 points if popularity dropped
+4. **Standings** — compare your total against league members
+
+Popularity is pulled live from Spotify, with a seeded daily delta applied to simulate real-world movement.
 
 ## Setup
 
@@ -13,22 +25,17 @@ Scores your Spotify listening history like an angel investor portfolio. Early co
 
 ### 2. Configure credentials
 
-Open `.env` and fill in your Client ID:
+Create a `.env` file and fill in your Client ID:
 
 ```
 VITE_SPOTIFY_CLIENT_ID=your_client_id_here
 VITE_REDIRECT_URI=http://127.0.0.1:5173/callback
 ```
 
-### 3. Install dependencies
+### 3. Install and run
 
 ```bash
 npm install
-```
-
-### 4. Run the dev server
-
-```bash
 npm run dev
 ```
 
@@ -36,28 +43,6 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173) in your browser.
 
 > **Note:** Use `127.0.0.1`, not `localhost` — the redirect URI must match exactly.
 
-## How scoring works
+## Status
 
-- **Investment weight** — long-term rank position (rank 1 = highest conviction)
-- **Earliness signal** — rank drift between long-term and short-term listening
-- **Growth proxy** — artist popularity from Spotify (0–100)
-- **ROI** = investmentWeight × earlinessScore × (popularity / 100)
-- **Portfolio score** = weighted average ROI scaled to 0–999
-
-### Artist tiers
-
-| Tier | Meaning |
-|------|---------|
-| Deep Cut | In your long-term top 50 but not short-term |
-| Early Bet | Significantly higher long-term rank than short-term |
-| Consistent | Similar rank across both time ranges |
-| Rising | Higher in short-term — a recent discovery |
-
-### Letter grades
-
-| Grade | Score |
-|-------|-------|
-| S | 700–999 |
-| A | 500–699 |
-| B | 300–499 |
-| C | 0–299 |
+The app currently uses mock artist data and mock league members. Spotify OAuth and live API integration are on the roadmap.
