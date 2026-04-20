@@ -17,3 +17,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [x] remove-league-scoring.md Remove the "Scoring" section from the league invite screen
 - [ ] avatar-placeholder-images.md Replace initial-letter avatars with placeholder people images throughout
 - [ ] draft-already-taken.md   Show some artists on the Draft screen as already claimed by other players and un-draftable
+- [ ] league-start-date.md     Add a Start Date field to each league using placeholder data
+- [ ] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
+- [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
+- [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings

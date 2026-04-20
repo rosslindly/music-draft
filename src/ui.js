@@ -214,17 +214,13 @@ export function renderDraft(artists, onLockIn, onBack) {
   });
 }
 
-// --- Lineup / Score View ---
+// --- League Home (Score View) ---
 
-export function renderScore({ results, totalPoints, standings, onNewDraft, onLogout }) {
-  const savedAt = results[0]?.savedAt
-    ? new Date(results[0].savedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
-    : 'unknown';
-
-  const hasMovement = results.some(r => r.change !== 0);
+export function renderScore({ results, totalPoints, standings, league, leagueStarted, onNewDraft, onLogout }) {
+  const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `
-    <div class="view-results">
+    <div class="view-league-home">
       <header class="results-header">
         <div class="header-brand">
           <svg class="logo-icon-sm" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -240,64 +236,70 @@ export function renderScore({ results, totalPoints, standings, onNewDraft, onLog
         </div>
       </header>
 
-      <div class="lineup-hero">
-        <div class="lineup-hero-icon">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" width="32" height="32">
-            <rect x="6" y="14" width="20" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/>
-            <path d="M11 14v-3a5 5 0 0 1 10 0v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="16" cy="21" r="2" fill="currentColor"/>
-          </svg>
-        </div>
-        <div class="lineup-hero-text">
-          <h2>Lineup locked in</h2>
-          <p>Drafted ${escapeHtml(savedAt)} · ${results.length} artists</p>
+      <div class="lh-banner">
+        <div class="lh-banner-inner">
+          <div class="lh-banner-left">
+            <div class="lh-league-badge-wrap">
+              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+                <path d="M24 4 L40 12 L40 26 C40 36 24 44 24 44 C24 44 8 36 8 26 L8 12 Z"
+                  fill="#7c3aed" fill-opacity="0.3" stroke="#7c3aed" stroke-width="1.5" stroke-linejoin="round"/>
+                <path d="M18 23 L22 27 L30 19" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="lh-league-info">
+              <div class="lh-league-name">${escapeHtml(league.name)}</div>
+              <div class="lh-league-meta">${escapeHtml(league.admin)}, Commissioner · ${league.teamCount} / ${league.maxTeams} teams</div>
+            </div>
+          </div>
+          <div class="lh-score-block">
+            ${leagueStarted
+              ? `<div class="lh-score-pts">${totalPoints}<span class="lh-score-pts-label"> pts</span></div>
+            <div class="lh-score-rank">#${userRank} of ${standings.length}</div>`
+              : `<div class="lh-score-pts lh-score-pts--pending">—</div>
+            <div class="lh-score-rank">Starts in ${league.daysUntilStart}d</div>`
+            }
+          </div>
         </div>
       </div>
 
-      <p class="lineup-nudge">
-        ${hasMovement
-          ? `Scores are live — check back daily to track your picks.`
-          : `Check back tomorrow to see if your artists climbed the charts.`
-        }
-      </p>
+      <div class="lh-content">
+        <section class="lh-section">
+          <h3 class="lh-section-title">My Lineup</h3>
+          <ul class="artist-list">
+            ${results.map(r => {
+              const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points === 1 ? 'lh-pts-flat' : 'lh-pts-zero';
+              const ptsLabel = !leagueStarted ? '—' : r.points > 0 ? `+${r.points}` : '0';
+              return `
+                <li class="artist-card lh-artist-card">
+                  <div class="artist-avatar" style="background:${artistColor(r.id)}">${escapeHtml(initials(r.name))}</div>
+                  <div class="artist-info">
+                    <div class="artist-name">${escapeHtml(r.name)}</div>
+                  </div>
+                  <div class="lh-artist-pts ${ptsCls}">${ptsLabel} <span class="lh-pts-suffix">pts</span></div>
+                </li>
+              `;
+            }).join('')}
+          </ul>
+        </section>
 
-      <ul class="artist-list tab-content" id="score-list">
-        ${results.map((r, i) => {
-          const changeSign = r.change > 0 ? '+' : '';
-          const changeCls = r.change > 0 ? 'change-up' : r.change < 0 ? 'change-down' : 'change-flat';
-          const color = artistColor(r.id);
-          return `
-            <li class="artist-card">
-              <div class="artist-rank">#${i + 1}</div>
-              <div class="artist-avatar" style="background:${color}">${escapeHtml(initials(r.name))}</div>
-              <div class="artist-info">
-                <div class="artist-top-row">
-                  <span class="artist-name">${escapeHtml(r.name)}</span>
+        <section class="lh-section">
+          <h3 class="lh-section-title">Standings</h3>
+          <ul class="standings-list">
+            ${standings.map((entry, i) => `
+              <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
+                <span class="standings-rank">${leagueStarted ? i + 1 : '—'}</span>
+                <span class="standings-name">${escapeHtml(entry.name)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
+                <div class="standings-picks">
+                  ${entry.picks.map(p => `
+                    <div class="standings-avatar" style="background:${artistColor(p.id)}" title="${escapeHtml(p.name)}">${escapeHtml(initials(p.name))}</div>
+                  `).join('')}
                 </div>
-                <div class="artist-meta"></div>
-              </div>
-            </li>
-          `;
-        }).join('')}
-      </ul>
-
-      <section class="standings tab-content">
-        <h3 class="standings-title">League Standings</h3>
-        <ul class="standings-list">
-          ${standings.map((entry, i) => `
-            <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
-              <span class="standings-rank">${i + 1}</span>
-              <span class="standings-name">${escapeHtml(entry.name)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
-              <div class="standings-picks">
-                ${entry.picks.map(p => `
-                  <div class="standings-avatar" style="background:${artistColor(p.id)}" title="${escapeHtml(p.name)}">${escapeHtml(initials(p.name))}</div>
-                `).join('')}
-              </div>
-              <span class="standings-pts">${entry.totalPoints} <span class="standings-pts-label">pts</span></span>
-            </li>
-          `).join('')}
-        </ul>
-      </section>
+                <span class="standings-pts">${entry.totalPoints} <span class="standings-pts-label">pts</span></span>
+              </li>
+            `).join('')}
+          </ul>
+        </section>
+      </div>
 
       <footer class="results-footer">
         Scores update daily · +3 if popularity rises · +1 if unchanged · 0 if it drops

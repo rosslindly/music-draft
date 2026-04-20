@@ -49,31 +49,45 @@ async function showDraft() {
 }
 
 async function showScore(lineup) {
-  renderLoading('Calculating score…');
+  const leagueStarted = MOCK_LEAGUE.daysUntilStart <= 0;
 
-  const userIds = lineup.map(a => a.id);
-  const memberIds = MOCK_MEMBERS.flatMap(m => m.lineup.map(a => a.id));
-  const allIds = [...new Set([...userIds, ...memberIds])];
-  const liveArtists = await getArtistsByIds(allIds);
-  const liveById = Object.fromEntries(liveArtists.map(a => [a.id, a]));
+  let results, totalPoints, memberStandings;
 
-  const { results, totalPoints } = scoreLineup(lineup, userIds.map(id => liveById[id]).filter(Boolean));
+  if (leagueStarted) {
+    renderLoading('Calculating score…');
+    const userIds = lineup.map(a => a.id);
+    const memberIds = MOCK_MEMBERS.flatMap(m => m.lineup.map(a => a.id));
+    const allIds = [...new Set([...userIds, ...memberIds])];
+    const liveArtists = await getArtistsByIds(allIds);
+    const liveById = Object.fromEntries(liveArtists.map(a => [a.id, a]));
 
-  const memberStandings = MOCK_MEMBERS.map(m => {
-    const live = m.lineup.map(a => liveById[a.id]).filter(Boolean);
-    const { totalPoints: pts } = scoreLineup(m.lineup, live);
-    return { name: m.name, picks: m.lineup, totalPoints: pts };
-  });
+    ({ results, totalPoints } = scoreLineup(lineup, userIds.map(id => liveById[id]).filter(Boolean)));
+    memberStandings = MOCK_MEMBERS.map(m => {
+      const live = m.lineup.map(a => liveById[a.id]).filter(Boolean);
+      const { totalPoints: pts } = scoreLineup(m.lineup, live);
+      return { name: m.name, picks: m.lineup, totalPoints: pts };
+    });
+  } else {
+    renderLoading('Loading lineup…');
+    results = lineup.map(a => ({ id: a.id, name: a.name, points: 0, change: 0, popularityThen: a.popularity, popularityNow: a.popularity, savedAt: a.savedAt }));
+    totalPoints = 0;
+    memberStandings = MOCK_MEMBERS.map(m => ({ name: m.name, picks: m.lineup, totalPoints: 0 }));
+    // small delay so the loading state is visible briefly
+    await new Promise(r => setTimeout(r, 200));
+  }
 
   const standings = [
     { name: 'You', picks: results, totalPoints, isYou: true },
     ...memberStandings,
-  ].sort((a, b) => b.totalPoints - a.totalPoints);
+  ];
+  if (leagueStarted) standings.sort((a, b) => b.totalPoints - a.totalPoints);
 
   renderScore({
     results,
     totalPoints,
     standings,
+    league: MOCK_LEAGUE,
+    leagueStarted,
     onNewDraft() { clearLineup(); welcomeSeen = false; leagueJoined = false; main(); },
     onLogout() { logout(); clearLineup(); main(); },
   });
