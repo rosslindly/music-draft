@@ -827,6 +827,33 @@ a:hover { text-decoration: underline; }
 
 .lh-section { margin-top: 28px; }
 
+.lh-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lh-section-header .lh-section-title {
+  margin-bottom: 0;
+}
+
+.btn-edit-lineup {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-edit-lineup:hover {
+  background: rgba(124,58,237,0.1);
+}
+
 .lh-section-title {
   font-size: 0.72rem;
   font-weight: 700;

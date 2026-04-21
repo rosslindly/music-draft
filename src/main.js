@@ -48,13 +48,14 @@ async function main() {
   }
 }
 
-async function showDraft() {
+async function showDraft(preSelected = []) {
   renderLoading('Loading artists…');
   const topArtists = await getTopArtists();
   renderDraft(
     topArtists,
     (selected) => { saveLineup(selected); showScore(getLineup()); },
     () => { leagueJoined = false; main(); },
+    preSelected,
   );
 }
 
@@ -100,6 +101,7 @@ async function showScore(lineup) {
     leagueStarted,
     onNewDraft() { clearLineup(); welcomeSeen = false; onboardingDone = false; userProfile = null; leagueJoined = false; main(); },
     onLogout() { logout(); clearLineup(); main(); },
+    onEditLineup() { showDraft(lineup); },
   });
 }
 

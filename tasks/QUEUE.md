@@ -20,7 +20,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] profile-header-settings.md   Show profile avatar and name in top right corner of main screens; build out a Settings screen
 - [ ] draft-already-taken.md   Show some artists on the Draft screen as already claimed by other players and un-draftable
 - [ ] league-start-date.md     Add a Start Date field to each league using placeholder data
-- [ ] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
+- [x] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
 - [ ] scoring-refactor.md     Refactor scoring with proportional monthly-listener values and streak-based bonus points
 - [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings

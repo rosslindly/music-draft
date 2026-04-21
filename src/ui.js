@@ -289,17 +289,19 @@ export function renderLeague(league, onJoin, onBack) {
 
 // --- Draft View ---
 
-export function renderDraft(artists, onLockIn, onBack) {
+export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
+  const preSelectedIds = new Set(preSelected.map(a => a.id));
+  const isEditing = preSelected.length > 0;
   app.innerHTML = `
     <div class="view view-draft">
       <div class="draft-container">
         <button class="btn-back" id="draft-back-btn">← Back</button>
-        <h1>Draft Your Lineup</h1>
+        <h1>${isEditing ? 'Edit Your Lineup' : 'Draft Your Lineup'}</h1>
         <p class="tagline">Draft up to 5 artists from your recent listening history.</p>
         <p class="draft-count" id="draft-count">0 / 5 selected</p>
         <ul class="artist-list" id="artist-list">
           ${artists.map((a, i) => `
-            <li class="artist-card" data-id="${escapeHtml(a.id)}">
+            <li class="artist-card${preSelectedIds.has(a.id) ? ' selected' : ''}" data-id="${escapeHtml(a.id)}">
               <div class="artist-rank">#${i + 1}</div>
               <div class="artist-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
               <div class="artist-info">
@@ -309,7 +311,8 @@ export function renderDraft(artists, onLockIn, onBack) {
                 <input type="checkbox"
                   value="${escapeHtml(a.id)}"
                   data-name="${escapeHtml(a.name)}"
-                  data-popularity="${a.popularity}" />
+                  data-popularity="${a.popularity}"
+                  ${preSelectedIds.has(a.id) ? 'checked' : ''} />
               </div>
             </li>
           `).join('')}
@@ -317,7 +320,7 @@ export function renderDraft(artists, onLockIn, onBack) {
       </div>
       <div class="draft-footer">
         <span class="draft-footer-count" id="draft-footer-count"></span>
-        <button class="btn-primary" id="lock-in-btn" disabled>Lock In Lineup →</button>
+        <button class="btn-primary" id="lock-in-btn" disabled>${isEditing ? 'Save Lineup →' : 'Lock In Lineup →'}</button>
       </div>
     </div>
   `;
@@ -333,6 +336,8 @@ export function renderDraft(artists, onLockIn, onBack) {
     footerCount.textContent = n > 0 ? `${n} selected` : '';
     lockBtn.disabled = n < 3;
   }
+
+  updateCount();
 
   cards.forEach(card => {
     card.addEventListener('click', () => {
@@ -361,7 +366,7 @@ export function renderDraft(artists, onLockIn, onBack) {
 
 // --- League Home (Score View) ---
 
-export function renderScore({ results, totalPoints, standings, league, leagueStarted, onNewDraft, onLogout }) {
+export function renderScore({ results, totalPoints, standings, league, leagueStarted, onNewDraft, onLogout, onEditLineup }) {
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `
@@ -409,7 +414,10 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
 
       <div class="lh-content">
         <section class="lh-section">
-          <h3 class="lh-section-title">My Lineup</h3>
+          <div class="lh-section-header">
+            <h3 class="lh-section-title">My Lineup</h3>
+            ${!leagueStarted ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
+          </div>
           <ul class="artist-list">
             ${results.map(r => {
               const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points === 1 ? 'lh-pts-flat' : 'lh-pts-zero';
@@ -454,6 +462,9 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
 
   document.getElementById('new-draft-btn').addEventListener('click', onNewDraft);
   document.getElementById('logout-btn').addEventListener('click', onLogout);
+  if (!leagueStarted) {
+    document.getElementById('edit-lineup-btn').addEventListener('click', onEditLineup);
+  }
 }
 
 // --- Loading View ---
