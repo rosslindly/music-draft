@@ -39,7 +39,7 @@ export function clearLineup() {
 }
 
 export function saveSnapshot(weekNumber, artists) {
-  const snapshots = getSnapshots();
+  const snapshots = getSnapshots().filter(s => s.week !== weekNumber);
   snapshots.push({
     week: weekNumber,
     savedAt: new Date().toISOString(),

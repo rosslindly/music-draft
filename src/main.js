@@ -104,7 +104,9 @@ async function showDraft(preSelected = []) {
 }
 
 function showBaselineEntry(lineup) {
-  renderBaselineEntry(lineup, (entries) => {
+  const week1 = getSnapshots().find(s => s.week === 1);
+  const existing = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
+  renderBaselineEntry(lineup, existing, (entries) => {
     saveSnapshot(1, entries);
     showScore(getLineup());
   });
@@ -159,7 +161,12 @@ async function showScore(lineup) {
     });
   } else {
     renderLoading('Loading lineup…');
-    results = lineup.map(a => ({ id: a.id, name: a.name, points: 0, change: 0, listenersThen: a.monthlyListeners, listenersNow: a.monthlyListeners, savedAt: a.savedAt }));
+    const week1 = getSnapshots().find(s => s.week === 1);
+    const week1ById = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
+    results = lineup.map(a => {
+      const baseline = week1ById[a.id] ?? a.monthlyListeners;
+      return { id: a.id, name: a.name, points: 0, change: 0, listenersThen: baseline, listenersNow: baseline, savedAt: a.savedAt };
+    });
     totalPoints = 0;
     memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
     await new Promise(r => setTimeout(r, 200));

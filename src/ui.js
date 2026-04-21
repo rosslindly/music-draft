@@ -24,6 +24,13 @@ function artistColor(id) {
 }
 
 
+function fmtListeners(n) {
+  if (n == null || isNaN(n)) return null;
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
 function getGrade(pts) {
   if (pts >= 12) return { grade: 'S', cls: 'grade-s', headline: 'Perfect Scout!' };
   if (pts >= 9)  return { grade: 'A', cls: 'grade-a', headline: 'Sharp Ear' };
@@ -367,7 +374,7 @@ export function renderLeague(league, onJoin, onBack) {
 
 // --- Baseline Entry View ---
 
-export function renderBaselineEntry(lineup, onSubmit) {
+export function renderBaselineEntry(lineup, existing, onSubmit) {
   app.innerHTML = `
     <div class="view view-baseline">
       <div class="baseline-card">
@@ -390,6 +397,7 @@ export function renderBaselineEntry(lineup, onSubmit) {
                 placeholder="e.g. 4200000"
                 min="1"
                 step="1"
+                ${existing[a.id] ? `value="${existing[a.id]}"` : ''}
               />
             </li>
           `).join('')}
@@ -570,6 +578,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
                   <div class="artist-avatar" style="background:${artistColor(r.id)}">${escapeHtml(initials(r.name))}</div>
                   <div class="artist-info">
                     <div class="artist-name">${escapeHtml(r.name)}</div>
+                    ${fmtListeners(r.listenersThen) != null ? `<div class="lh-artist-listeners">Week 1 · ${fmtListeners(r.listenersThen)} listeners</div>` : ''}
                   </div>
                   <div class="lh-artist-pts ${ptsCls}">${ptsLabel} <span class="lh-pts-suffix">pts</span></div>
                 </li>
@@ -595,16 +604,15 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               </li>
             `).join('')}
           </ul>
+          ${league.inviteCode ? `
+          <div class="lh-invite-banner">
+            <span class="lh-invite-banner-label">Invite Code</span>
+            <span class="lh-invite-banner-code">${escapeHtml(league.inviteCode)}</span>
+            <button class="btn-copy-code btn-copy-code--sm" id="lh-copy-code-btn">Copy</button>
+          </div>
+          ` : ''}
         </section>
       </div>
-
-      ${league.inviteCode ? `
-      <div class="lh-invite-banner">
-        <span class="lh-invite-banner-label">Invite Code</span>
-        <span class="lh-invite-banner-code">${escapeHtml(league.inviteCode)}</span>
-        <button class="btn-copy-code btn-copy-code--sm" id="lh-copy-code-btn">Copy</button>
-      </div>
-      ` : ''}
 
       <footer class="results-footer">
         Scores update weekly · +3 if listeners grew · +1 if unchanged · 0 if they dropped

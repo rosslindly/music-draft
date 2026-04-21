@@ -881,6 +881,7 @@ a:hover { text-decoration: underline; }
 }
 
 .artist-name { font-size: 0.95rem; font-weight: 600; }
+.lh-artist-listeners { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
 
 .tier-badge {
@@ -1230,15 +1231,13 @@ a:hover { text-decoration: underline; }
 
 /* Invite banner */
 .lh-invite-banner {
-  width: 100%;
-  background: var(--bg-card);
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+  padding-top: 14px;
 }
 
 .lh-invite-banner-label {
