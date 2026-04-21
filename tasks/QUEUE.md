@@ -18,6 +18,8 @@ Prioritized by dependency order. Tasks that others depend on come first.
 
 ## Backlog
 
+- [x] create-league-enhancements.md  Add Start Date + Max Participants fields to Create League; route to League Home (not Draft) post-creation with empty-state Draft CTA and visible Invite Code
+
 - [x] onboarding-screen.md     Profile photo, handle, and Spotify connect screen between Welcome and Join League
 - [ ] linting-setup.md         Add ESLint + Prettier with shared config
 - [ ] vitest-setup.md          Configure Vitest as the test framework

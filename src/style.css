@@ -469,6 +469,16 @@ a:hover { text-decoration: underline; }
   width: 100%;
 }
 
+.create-league-fields-row {
+  display: flex;
+  gap: 16px;
+}
+
+.create-league-field--half {
+  flex: 1;
+  min-width: 0;
+}
+
 /* === League === */
 .view-league {
   background: radial-gradient(ellipse at 50% -10%, #1a0a40 0%, var(--bg) 65%);
@@ -942,6 +952,42 @@ a:hover { text-decoration: underline; }
 
 .lh-section { margin-top: 28px; }
 
+
+.btn-copy-code {
+  background: transparent;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 18px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-copy-code:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.lh-empty-lineup {
+  background: var(--bg-card-2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.lh-empty-lineup-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 16px;
+}
+
+.lh-draft-cta-btn {
+  min-width: 160px;
+}
+
 .lh-section-header {
   display: flex;
   align-items: center;
@@ -1093,6 +1139,40 @@ a:hover { text-decoration: underline; }
   font-size: 0.72rem;
   font-weight: 500;
   color: var(--text-muted);
+}
+
+/* Invite banner */
+.lh-invite-banner {
+  width: 100%;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.lh-invite-banner-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lh-invite-banner-code {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.btn-copy-code--sm {
+  padding: 3px 10px;
+  font-size: 0.75rem;
 }
 
 /* Footer */

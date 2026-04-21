@@ -265,7 +265,7 @@ export function renderCreateLeague(onContinue, onBack) {
         <div class="create-league-header">
           <div class="create-league-step-label">One more step</div>
           <h1 class="create-league-title">Create your league</h1>
-          <p class="create-league-sub">Name your league and get a shareable invite code.</p>
+          <p class="create-league-sub">Name your league and set it up for your crew.</p>
         </div>
 
         <div class="create-league-field">
@@ -282,10 +282,26 @@ export function renderCreateLeague(onContinue, onBack) {
           <p class="create-league-field-hint">Up to 40 characters.</p>
         </div>
 
-        <div class="create-league-code-wrap">
-          <div class="create-league-code-label">Your invite code</div>
-          <div class="create-league-code" id="invite-code-display">${escapeHtml(inviteCode)}</div>
-          <p class="create-league-field-hint">Share this code with friends to join your league later.</p>
+        <div class="create-league-fields-row">
+          <div class="create-league-field create-league-field--half">
+            <label class="create-league-label" for="league-start-date-input">Start Date</label>
+            <input
+              type="date"
+              id="league-start-date-input"
+              class="create-league-input"
+            />
+          </div>
+          <div class="create-league-field create-league-field--half">
+            <label class="create-league-label" for="league-max-participants-input">Max Players</label>
+            <input
+              type="number"
+              id="league-max-participants-input"
+              class="create-league-input"
+              value="8"
+              min="2"
+              max="50"
+            />
+          </div>
         </div>
 
         <button class="btn-primary create-league-btn" id="create-league-btn" disabled>Create League →</button>
@@ -305,11 +321,16 @@ export function renderCreateLeague(onContinue, onBack) {
   createBtn.addEventListener('click', () => {
     const name = nameInput.value.trim();
     if (!name) return;
+    const scheduledStartDate = document.getElementById('league-start-date-input').value || null;
+    const maxParticipantsRaw = document.getElementById('league-max-participants-input').value;
+    const maxParticipants = maxParticipantsRaw ? parseInt(maxParticipantsRaw, 10) : null;
     onContinue({
       name,
       inviteCode,
       createdAt: new Date().toISOString(),
       startDate: null,
+      scheduledStartDate,
+      maxParticipants,
     });
   });
 }
@@ -436,7 +457,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
 
 // --- League Home (Score View) ---
 
-export function renderScore({ results, totalPoints, standings, league, leagueStarted, onNewDraft, onLogout, onEditLineup }) {
+export function renderScore({ results, totalPoints, standings, league, leagueStarted, onNewDraft, onLogout, onEditLineup, onDraft }) {
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `
@@ -483,11 +504,18 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
       </div>
 
       <div class="lh-content">
+
         <section class="lh-section">
           <div class="lh-section-header">
             <h3 class="lh-section-title">My Lineup</h3>
-            ${!leagueStarted ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
+            ${!leagueStarted && results.length > 0 ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
           </div>
+          ${results.length === 0 ? `
+            <div class="lh-empty-lineup">
+              <p class="lh-empty-lineup-text">You haven't drafted your lineup yet.</p>
+              <button class="btn-primary lh-draft-cta-btn" id="lh-draft-cta-btn">Draft Lineup →</button>
+            </div>
+          ` : `
           <ul class="artist-list">
             ${results.map(r => {
               const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points === 1 ? 'lh-pts-flat' : 'lh-pts-zero';
@@ -503,6 +531,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               `;
             }).join('')}
           </ul>
+          `}
         </section>
 
         <section class="lh-section">
@@ -524,6 +553,14 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
         </section>
       </div>
 
+      ${league.inviteCode ? `
+      <div class="lh-invite-banner">
+        <span class="lh-invite-banner-label">Invite Code</span>
+        <span class="lh-invite-banner-code">${escapeHtml(league.inviteCode)}</span>
+        <button class="btn-copy-code btn-copy-code--sm" id="lh-copy-code-btn">Copy</button>
+      </div>
+      ` : ''}
+
       <footer class="results-footer">
         Scores update daily · +3 if popularity rises · +1 if unchanged · 0 if it drops
       </footer>
@@ -532,8 +569,20 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
 
   document.getElementById('new-draft-btn').addEventListener('click', onNewDraft);
   document.getElementById('logout-btn').addEventListener('click', onLogout);
-  if (!leagueStarted) {
+  if (!leagueStarted && results.length > 0) {
     document.getElementById('edit-lineup-btn').addEventListener('click', onEditLineup);
+  }
+  if (results.length === 0) {
+    document.getElementById('lh-draft-cta-btn').addEventListener('click', onDraft ?? onEditLineup);
+  }
+  const copyBtn = document.getElementById('lh-copy-code-btn');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(league.inviteCode).then(() => {
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy Code'; }, 2000);
+      });
+    });
   }
 }
 

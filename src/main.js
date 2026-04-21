@@ -43,9 +43,9 @@ async function main() {
             ...newLeague,
             admin: userProfile?.handle ?? '@you',
             teamCount: 1,
-            maxTeams: 10,
+            maxTeams: newLeague.maxParticipants ?? 10,
           });
-          main();
+          showScore(null);
         },
         () => { onboardingDone = false; main(); },
       );
@@ -108,7 +108,23 @@ async function showScore(lineup) {
     daysUntilStart: 0,
     teamCount: league?.teamCount ?? 1,
     maxTeams: league?.maxTeams ?? 10,
+    inviteCode: league?.inviteCode ?? null,
   };
+
+  if (!lineup) {
+    renderScore({
+      results: [],
+      totalPoints: 0,
+      standings: [{ handle: userProfile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
+      league: displayLeague,
+      leagueStarted: false,
+      onNewDraft() { clearLineup(); clearLeague(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
+      onLogout() { logout(); clearLineup(); clearLeague(); main(); },
+      onEditLineup() {},
+      onDraft() { showDraft(); },
+    });
+    return;
+  }
 
   let results, totalPoints, memberStandings;
 
