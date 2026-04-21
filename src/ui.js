@@ -46,7 +46,7 @@ function getGrade(pts) {
 
 // --- Welcome View ---
 
-export function renderWelcome(onStart) {
+export function renderWelcome(onJoin, onCreate) {
   app.innerHTML = `
     <div class="view view-welcome">
       <div class="welcome-content">
@@ -60,7 +60,7 @@ export function renderWelcome(onStart) {
         </div>
 
         <h1 class="welcome-headline">Pick artists.<br>Predict their rise.</h1>
-        <p class="welcome-sub">A daily fantasy game for music discovery. Build your lineup, lock in scores, and see if your ear was right.</p>
+        <p class="welcome-sub">A fantasy game for music discovery. Draft a lineup, lock in scores, and see if your ear was right.</p>
 
         <div class="welcome-steps">
           <div class="welcome-step">
@@ -81,17 +81,21 @@ export function renderWelcome(onStart) {
             <div class="step-num">3</div>
             <div class="step-body">
               <strong>See who rose</strong>
-              <span>Come back daily. +3 pts if they climbed · +1 if steady · 0 if they dropped.</span>
+              <span>Come back weekly. +3 pts if they climbed · +1 if steady · 0 if they dropped.</span>
             </div>
           </div>
         </div>
 
-        <button class="btn-primary welcome-cta" id="welcome-start-btn">Get Started →</button>
+        <div class="welcome-ctas">
+          <button class="btn-primary welcome-cta-btn" id="welcome-join-btn">Join a League →</button>
+          <button class="btn-secondary welcome-cta-btn" id="welcome-create-btn">Create a League</button>
+        </div>
         <p class="welcome-hint">Free to play · No account needed</p>
       </div>
     </div>
   `;
-  document.getElementById('welcome-start-btn').addEventListener('click', onStart);
+  document.getElementById('welcome-join-btn').addEventListener('click', onJoin);
+  document.getElementById('welcome-create-btn').addEventListener('click', onCreate);
 }
 
 // --- Onboarding View ---
@@ -241,6 +245,72 @@ export function renderOnboarding(onContinue, onBack) {
     const handle = handleInput.value.trim();
     if (handle.length < 2) return;
     onContinue({ handle: `@${handle}`, photo: photoDataUrl, spotifyConnected });
+  });
+}
+
+// --- Create League View ---
+
+function generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
+
+export function renderCreateLeague(onContinue, onBack) {
+  const inviteCode = generateInviteCode();
+  app.innerHTML = `
+    <div class="view view-create-league">
+      <div class="create-league-card">
+        <button class="btn-back" id="create-league-back-btn">← Back</button>
+
+        <div class="create-league-header">
+          <div class="create-league-step-label">One more step</div>
+          <h1 class="create-league-title">Create your league</h1>
+          <p class="create-league-sub">Name your league and get a shareable invite code.</p>
+        </div>
+
+        <div class="create-league-field">
+          <label class="create-league-label" for="league-name-input">League name</label>
+          <input
+            type="text"
+            id="league-name-input"
+            class="create-league-input"
+            placeholder="e.g. Indie Tastemakers"
+            maxlength="40"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <p class="create-league-field-hint">Up to 40 characters.</p>
+        </div>
+
+        <div class="create-league-code-wrap">
+          <div class="create-league-code-label">Your invite code</div>
+          <div class="create-league-code" id="invite-code-display">${escapeHtml(inviteCode)}</div>
+          <p class="create-league-field-hint">Share this code with friends to join your league later.</p>
+        </div>
+
+        <button class="btn-primary create-league-btn" id="create-league-btn" disabled>Create League →</button>
+      </div>
+    </div>
+  `;
+
+  const nameInput = document.getElementById('league-name-input');
+  const createBtn = document.getElementById('create-league-btn');
+
+  nameInput.addEventListener('input', () => {
+    createBtn.disabled = nameInput.value.trim().length === 0;
+  });
+
+  document.getElementById('create-league-back-btn').addEventListener('click', onBack);
+
+  createBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    onContinue({
+      name,
+      inviteCode,
+      createdAt: new Date().toISOString(),
+      startDate: null,
+    });
   });
 }
 

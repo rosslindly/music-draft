@@ -1,6 +1,20 @@
 // scoring.js — Fantasy draft scoring logic
 
 const LINEUP_KEY = 'fantasy_lineup';
+const LEAGUE_KEY = 'md_league';
+
+export function saveLeague(league) {
+  localStorage.setItem(LEAGUE_KEY, JSON.stringify(league));
+}
+
+export function getLeague() {
+  const raw = localStorage.getItem(LEAGUE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+
+export function clearLeague() {
+  localStorage.removeItem(LEAGUE_KEY);
+}
 
 export function saveLineup(artists) {
   const savedAt = new Date().toISOString();

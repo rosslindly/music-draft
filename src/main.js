@@ -1,15 +1,15 @@
 // main.js — Entry point
 import { logout } from './session.js';
 import { getTopArtists, getArtistsByIds, MOCK_MEMBERS } from './data.js';
-import { saveLineup, getLineup, clearLineup, scoreLineup } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderLeague, renderDraft, renderScore, renderLoading } from './ui.js';
+import { saveLineup, getLineup, clearLineup, scoreLineup, saveLeague, getLeague, clearLeague } from './scoring.js';
+import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderScore, renderLoading } from './ui.js';
 
 let welcomeSeen = false;
 let onboardingDone = false;
 let userProfile = null;
-let leagueJoined = false;
+let userIntent = null; // 'create' | 'join'
 
-const MOCK_LEAGUE = {
+const MOCK_JOIN_LEAGUE = {
   name: 'Indie Tastemakers',
   admin: 'Jordan K.',
   daysUntilStart: 3,
@@ -19,7 +19,10 @@ const MOCK_LEAGUE = {
 
 async function main() {
   if (!welcomeSeen) {
-    renderWelcome(() => { welcomeSeen = true; main(); });
+    renderWelcome(
+      () => { welcomeSeen = true; userIntent = 'join'; main(); },
+      () => { welcomeSeen = true; userIntent = 'create'; main(); },
+    );
     return;
   }
 
@@ -31,12 +34,40 @@ async function main() {
     return;
   }
 
-  if (!leagueJoined) {
-    renderLeague(
-      MOCK_LEAGUE,
-      () => { leagueJoined = true; clearLineup(); main(); },
-      () => { onboardingDone = false; main(); },
-    );
+  const league = getLeague();
+  if (!league) {
+    if (userIntent === 'create') {
+      renderCreateLeague(
+        (newLeague) => {
+          saveLeague({
+            ...newLeague,
+            admin: userProfile?.handle ?? '@you',
+            teamCount: 1,
+            maxTeams: 10,
+          });
+          main();
+        },
+        () => { onboardingDone = false; main(); },
+      );
+    } else {
+      renderLeague(
+        MOCK_JOIN_LEAGUE,
+        () => {
+          saveLeague({
+            name: MOCK_JOIN_LEAGUE.name,
+            inviteCode: 'INDIE1',
+            createdAt: new Date().toISOString(),
+            startDate: null,
+            admin: MOCK_JOIN_LEAGUE.admin,
+            teamCount: MOCK_JOIN_LEAGUE.teamCount,
+            maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
+          });
+          clearLineup();
+          main();
+        },
+        () => { onboardingDone = false; main(); },
+      );
+    }
     return;
   }
 
@@ -53,27 +84,46 @@ async function showDraft(preSelected = []) {
   const topArtists = await getTopArtists();
   renderDraft(
     topArtists,
-    (selected) => { saveLineup(selected); showScore(getLineup()); },
-    () => { leagueJoined = false; main(); },
+    (selected) => {
+      saveLineup(selected);
+      // Set startDate on first draft submission
+      const league = getLeague();
+      if (league && !league.startDate) {
+        saveLeague({ ...league, startDate: new Date().toISOString() });
+      }
+      showScore(getLineup());
+    },
+    () => { main(); },
     preSelected,
   );
 }
 
 async function showScore(lineup) {
-  const leagueStarted = MOCK_LEAGUE.daysUntilStart <= 0;
+  const league = getLeague();
+  const leagueStarted = !!(league && league.startDate);
+
+  const displayLeague = {
+    name: league?.name ?? 'My League',
+    admin: league?.admin ?? userProfile?.handle ?? '@you',
+    daysUntilStart: 0,
+    teamCount: league?.teamCount ?? 1,
+    maxTeams: league?.maxTeams ?? 10,
+  };
 
   let results, totalPoints, memberStandings;
+
+  const isSolo = league?.teamCount === 1;
 
   if (leagueStarted) {
     renderLoading('Calculating score…');
     const userIds = lineup.map(a => a.id);
-    const memberIds = MOCK_MEMBERS.flatMap(m => m.lineup.map(a => a.id));
+    const memberIds = isSolo ? [] : MOCK_MEMBERS.flatMap(m => m.lineup.map(a => a.id));
     const allIds = [...new Set([...userIds, ...memberIds])];
     const liveArtists = await getArtistsByIds(allIds);
     const liveById = Object.fromEntries(liveArtists.map(a => [a.id, a]));
 
     ({ results, totalPoints } = scoreLineup(lineup, userIds.map(id => liveById[id]).filter(Boolean)));
-    memberStandings = MOCK_MEMBERS.map(m => {
+    memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => {
       const live = m.lineup.map(a => liveById[a.id]).filter(Boolean);
       const { totalPoints: pts } = scoreLineup(m.lineup, live);
       return { handle: m.handle, picks: m.lineup, totalPoints: pts };
@@ -82,8 +132,7 @@ async function showScore(lineup) {
     renderLoading('Loading lineup…');
     results = lineup.map(a => ({ id: a.id, name: a.name, points: 0, change: 0, popularityThen: a.popularity, popularityNow: a.popularity, savedAt: a.savedAt }));
     totalPoints = 0;
-    memberStandings = MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
-    // small delay so the loading state is visible briefly
+    memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
     await new Promise(r => setTimeout(r, 200));
   }
 
@@ -97,10 +146,10 @@ async function showScore(lineup) {
     results,
     totalPoints,
     standings,
-    league: MOCK_LEAGUE,
+    league: displayLeague,
     leagueStarted,
-    onNewDraft() { clearLineup(); welcomeSeen = false; onboardingDone = false; userProfile = null; leagueJoined = false; main(); },
-    onLogout() { logout(); clearLineup(); main(); },
+    onNewDraft() { clearLineup(); clearLeague(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
+    onLogout() { logout(); clearLineup(); clearLeague(); main(); },
     onEditLineup() { showDraft(lineup); },
   });
 }

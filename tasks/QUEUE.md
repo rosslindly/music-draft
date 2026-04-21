@@ -4,7 +4,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 
 ## Solo Alpha — Full Lifecycle (do these first, in order)
 
-- [ ] league-create.md              Replace hardcoded MOCK_LEAGUE with real create flow + localStorage
+- [x] league-create.md              Replace hardcoded MOCK_LEAGUE with real create flow + localStorage
 - [ ] localstorage-export.md        Export/import JSON backup as data safety net
 - [ ] monthly-listeners-model.md    Swap popularity (0–100) for monthlyListeners throughout data model
 - [ ] listener-baseline-entry.md    Manual entry of Week 1 listener counts after drafting
