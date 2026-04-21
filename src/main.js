@@ -34,7 +34,7 @@ async function main() {
   if (!leagueJoined) {
     renderLeague(
       MOCK_LEAGUE,
-      () => { leagueJoined = true; main(); },
+      () => { leagueJoined = true; clearLineup(); main(); },
       () => { onboardingDone = false; main(); },
     );
     return;
