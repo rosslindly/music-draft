@@ -692,6 +692,92 @@ a:hover { text-decoration: underline; }
 .error-icon { font-size: 2.5rem; }
 .error-message { color: var(--text-muted); font-size: 0.9rem; }
 
+/* === Baseline Entry === */
+.view-baseline {
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 16px 80px;
+}
+
+.baseline-card {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.baseline-header {
+  margin-bottom: 28px;
+}
+
+.baseline-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.baseline-sub {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.baseline-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.baseline-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.baseline-avatar {
+  flex-shrink: 0;
+}
+
+.baseline-artist-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.baseline-input {
+  width: 130px;
+  flex-shrink: 0;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.88rem;
+  padding: 8px 10px;
+  text-align: right;
+}
+
+.baseline-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.baseline-input::placeholder {
+  color: var(--text-muted);
+}
+
+/* hide number spinners */
+.baseline-input::-webkit-outer-spin-button,
+.baseline-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.baseline-input[type=number] { -moz-appearance: textfield; }
+
+.baseline-save-btn {
+  width: 100%;
+}
+
 /* === Draft === */
 .view-draft {
   align-items: flex-start;
@@ -795,6 +881,7 @@ a:hover { text-decoration: underline; }
 }
 
 .artist-name { font-size: 0.95rem; font-weight: 600; }
+
 
 .tier-badge {
   font-size: 0.7rem;

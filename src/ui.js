@@ -23,19 +23,6 @@ function artistColor(id) {
   return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }
 
-function getTier(popularity) {
-  if (popularity >= 85) return 'rising';
-  if (popularity >= 70) return 'consistent';
-  if (popularity >= 55) return 'early_bet';
-  return 'deep_cut';
-}
-
-function getTierLabel(popularity) {
-  if (popularity >= 85) return 'Trending';
-  if (popularity >= 70) return 'Established';
-  if (popularity >= 55) return 'Emerging';
-  return 'Deep Cut';
-}
 
 function getGrade(pts) {
   if (pts >= 12) return { grade: 'S', cls: 'grade-s', headline: 'Perfect Scout!' };
@@ -73,8 +60,8 @@ export function renderWelcome(onJoin, onCreate) {
           <div class="welcome-step">
             <div class="step-num">2</div>
             <div class="step-body">
-              <strong>Snapshot their popularity</strong>
-              <span>Each artist's score is locked in the moment you submit your draft.</span>
+              <strong>Snapshot their listeners</strong>
+              <span>Each artist's monthly listener count is locked in the moment you submit your draft.</span>
             </div>
           </div>
           <div class="welcome-step">
@@ -378,6 +365,64 @@ export function renderLeague(league, onJoin, onBack) {
   document.getElementById('league-back-btn').addEventListener('click', onBack);
 }
 
+// --- Baseline Entry View ---
+
+export function renderBaselineEntry(lineup, onSubmit) {
+  app.innerHTML = `
+    <div class="view view-baseline">
+      <div class="baseline-card">
+        <div class="baseline-header">
+          <h1 class="baseline-title">Enter Starting Listener Counts</h1>
+          <p class="baseline-sub">Look up each artist on Spotify and enter their current monthly listeners. This sets your Week 1 baseline for scoring.</p>
+        </div>
+
+        <ul class="baseline-list" id="baseline-list">
+          ${lineup.map(a => `
+            <li class="baseline-row" data-id="${escapeHtml(a.id)}">
+              <div class="artist-avatar baseline-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
+              <div class="baseline-artist-info">
+                <div class="artist-name">${escapeHtml(a.name)}</div>
+              </div>
+              <input
+                type="number"
+                class="baseline-input"
+                data-id="${escapeHtml(a.id)}"
+                placeholder="e.g. 4200000"
+                min="1"
+                step="1"
+              />
+            </li>
+          `).join('')}
+        </ul>
+
+        <button class="btn-primary baseline-save-btn" id="baseline-save-btn" disabled>Save Baseline →</button>
+      </div>
+    </div>
+  `;
+
+  const inputs = [...document.querySelectorAll('.baseline-input')];
+  const saveBtn = document.getElementById('baseline-save-btn');
+
+  function validate() {
+    const allValid = inputs.every(inp => {
+      const val = parseInt(inp.value, 10);
+      return Number.isInteger(val) && val > 0;
+    });
+    saveBtn.disabled = !allValid;
+  }
+
+  inputs.forEach(inp => inp.addEventListener('input', validate));
+
+  saveBtn.addEventListener('click', () => {
+    const entries = lineup.map((a, i) => ({
+      id: a.id,
+      name: a.name,
+      monthlyListeners: parseInt(inputs[i].value, 10),
+    }));
+    onSubmit(entries);
+  });
+}
+
 // --- Draft View ---
 
 export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
@@ -402,7 +447,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
                 <input type="checkbox"
                   value="${escapeHtml(a.id)}"
                   data-name="${escapeHtml(a.name)}"
-                  data-popularity="${a.popularity}"
+                  data-monthly-listeners="${a.monthlyListeners}"
                   ${preSelectedIds.has(a.id) ? 'checked' : ''} />
               </div>
             </li>
@@ -449,7 +494,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
       .filter(c => c.classList.contains('selected'))
       .map(c => {
         const cb = c.querySelector('input[type="checkbox"]');
-        return { id: cb.value, name: cb.dataset.name, popularity: parseInt(cb.dataset.popularity, 10) };
+        return { id: cb.value, name: cb.dataset.name, monthlyListeners: parseInt(cb.dataset.monthlyListeners, 10) };
       });
     onLockIn(selected);
   });
@@ -562,7 +607,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
       ` : ''}
 
       <footer class="results-footer">
-        Scores update daily · +3 if popularity rises · +1 if unchanged · 0 if it drops
+        Scores update weekly · +3 if listeners grew · +1 if unchanged · 0 if they dropped
       </footer>
     </div>
   `;

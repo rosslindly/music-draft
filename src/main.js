@@ -1,8 +1,8 @@
 // main.js — Entry point
 import { logout } from './session.js';
 import { getTopArtists, getArtistsByIds, MOCK_MEMBERS } from './data.js';
-import { saveLineup, getLineup, clearLineup, scoreLineup, saveLeague, getLeague, clearLeague } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderScore, renderLoading } from './ui.js';
+import { saveLineup, getLineup, clearLineup, scoreLineup, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots } from './scoring.js';
+import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderBaselineEntry, renderScore, renderLoading } from './ui.js';
 
 let welcomeSeen = false;
 let onboardingDone = false;
@@ -73,7 +73,12 @@ async function main() {
 
   const lineup = getLineup();
   if (lineup) {
-    await showScore(lineup);
+    const hasBaseline = getSnapshots().some(s => s.week === 1);
+    if (hasBaseline) {
+      await showScore(lineup);
+    } else {
+      showBaselineEntry(lineup);
+    }
   } else {
     await showDraft();
   }
@@ -91,16 +96,24 @@ async function showDraft(preSelected = []) {
       if (league && !league.startDate) {
         saveLeague({ ...league, startDate: new Date().toISOString() });
       }
-      showScore(getLineup());
+      showBaselineEntry(getLineup());
     },
     () => { main(); },
     preSelected,
   );
 }
 
+function showBaselineEntry(lineup) {
+  renderBaselineEntry(lineup, (entries) => {
+    saveSnapshot(1, entries);
+    showScore(getLineup());
+  });
+}
+
 async function showScore(lineup) {
   const league = getLeague();
-  const leagueStarted = !!(league && league.startDate);
+  // Scoring only activates once there's a weekly update (week > 1) to compare against the baseline
+  const leagueStarted = getSnapshots().some(s => s.week > 1);
 
   const displayLeague = {
     name: league?.name ?? 'My League',
@@ -118,8 +131,8 @@ async function showScore(lineup) {
       standings: [{ handle: userProfile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
       league: displayLeague,
       leagueStarted: false,
-      onNewDraft() { clearLineup(); clearLeague(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
-      onLogout() { logout(); clearLineup(); clearLeague(); main(); },
+      onNewDraft() { clearLineup(); clearLeague(); clearSnapshots(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
+      onLogout() { logout(); clearLineup(); clearLeague(); clearSnapshots(); main(); },
       onEditLineup() {},
       onDraft() { showDraft(); },
     });
@@ -146,7 +159,7 @@ async function showScore(lineup) {
     });
   } else {
     renderLoading('Loading lineup…');
-    results = lineup.map(a => ({ id: a.id, name: a.name, points: 0, change: 0, popularityThen: a.popularity, popularityNow: a.popularity, savedAt: a.savedAt }));
+    results = lineup.map(a => ({ id: a.id, name: a.name, points: 0, change: 0, listenersThen: a.monthlyListeners, listenersNow: a.monthlyListeners, savedAt: a.savedAt }));
     totalPoints = 0;
     memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
     await new Promise(r => setTimeout(r, 200));
@@ -164,8 +177,8 @@ async function showScore(lineup) {
     standings,
     league: displayLeague,
     leagueStarted,
-    onNewDraft() { clearLineup(); clearLeague(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
-    onLogout() { logout(); clearLineup(); clearLeague(); main(); },
+    onNewDraft() { clearLineup(); clearLeague(); clearSnapshots(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
+    onLogout() { logout(); clearLineup(); clearLeague(); clearSnapshots(); main(); },
     onEditLineup() { showDraft(lineup); },
   });
 }

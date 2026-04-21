@@ -2,6 +2,7 @@
 
 const LINEUP_KEY = 'fantasy_lineup';
 const LEAGUE_KEY = 'md_league';
+const SNAPSHOTS_KEY = 'md_snapshots';
 
 export function saveLeague(league) {
   localStorage.setItem(LEAGUE_KEY, JSON.stringify(league));
@@ -18,14 +19,13 @@ export function clearLeague() {
 
 export function saveLineup(artists) {
   const savedAt = new Date().toISOString();
-  const lineup = artists.map(({ id, name, popularity }) => ({
+  const lineup = artists.map(({ id, name, monthlyListeners }) => ({
     id,
     name,
-    // Coerce NaN/undefined/non-number to null so JSON round-trips cleanly
-    popularity: typeof popularity === 'number' && !isNaN(popularity) ? popularity : null,
+    monthlyListeners: typeof monthlyListeners === 'number' && !isNaN(monthlyListeners) ? monthlyListeners : null,
     savedAt,
   }));
-  console.log('[scoring] saving lineup:', lineup.map(a => `${a.name}: ${a.popularity}`));
+  console.log('[scoring] saving lineup:', lineup.map(a => `${a.name}: ${a.monthlyListeners}`));
   localStorage.setItem(LINEUP_KEY, JSON.stringify(lineup));
 }
 
@@ -38,9 +38,28 @@ export function clearLineup() {
   localStorage.removeItem(LINEUP_KEY);
 }
 
+export function saveSnapshot(weekNumber, artists) {
+  const snapshots = getSnapshots();
+  snapshots.push({
+    week: weekNumber,
+    savedAt: new Date().toISOString(),
+    artists: artists.map(({ id, name, monthlyListeners }) => ({ id, name, monthlyListeners })),
+  });
+  localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(snapshots));
+}
+
+export function getSnapshots() {
+  const raw = localStorage.getItem(SNAPSHOTS_KEY);
+  return raw ? JSON.parse(raw) : [];
+}
+
+export function clearSnapshots() {
+  localStorage.removeItem(SNAPSHOTS_KEY);
+}
+
 /**
- * @param {Array} savedArtists - [{id, name, popularity, savedAt}]
- * @param {Array} liveArtists  - Spotify artist objects from /artists?ids=...
+ * @param {Array} savedArtists - [{id, name, monthlyListeners, savedAt}]
+ * @param {Array} liveArtists  - artist objects with current monthlyListeners
  * @returns {{ results: Array, totalPoints: number }}
  */
 export function scoreLineup(savedArtists, liveArtists) {
@@ -50,15 +69,15 @@ export function scoreLineup(savedArtists, liveArtists) {
   let totalPoints = 0;
   const results = savedArtists.map(saved => {
     const live = liveById[saved.id];
-    const popularityNow = live?.popularity ?? saved.popularity;
-    const change = popularityNow - saved.popularity;
+    const listenersNow = live?.monthlyListeners ?? saved.monthlyListeners;
+    const change = listenersNow - saved.monthlyListeners;
     const points = change > 0 ? 3 : change === 0 ? 1 : 0;
     totalPoints += points;
     return {
       id: saved.id,
       name: saved.name,
-      popularityThen: saved.popularity,
-      popularityNow,
+      listenersThen: saved.monthlyListeners,
+      listenersNow,
       change,
       points,
       savedAt: saved.savedAt,
