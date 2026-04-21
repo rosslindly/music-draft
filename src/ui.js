@@ -295,7 +295,7 @@ export function renderDraft(artists, onLockIn, onBack) {
       <div class="draft-container">
         <button class="btn-back" id="draft-back-btn">← Back</button>
         <h1>Draft Your Lineup</h1>
-        <p class="tagline">Draft up to 5 artists from your recent listening history. Their popularity scores will be snapshotted now.</p>
+        <p class="tagline">Draft up to 5 artists from your recent listening history.</p>
         <p class="draft-count" id="draft-count">0 / 5 selected</p>
         <ul class="artist-list" id="artist-list">
           ${artists.map((a, i) => `
@@ -303,12 +303,7 @@ export function renderDraft(artists, onLockIn, onBack) {
               <div class="artist-rank">#${i + 1}</div>
               <div class="artist-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
               <div class="artist-info">
-                <div class="artist-top-row">
-                  <span class="artist-name">${escapeHtml(a.name)}</span>
-                </div>
-                <div class="artist-meta">
-                  <span>Pop: ${a.popularity}</span>
-                </div>
+                <div class="artist-name">${escapeHtml(a.name)}</div>
               </div>
               <div class="artist-select">
                 <input type="checkbox"
