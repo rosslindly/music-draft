@@ -2,7 +2,7 @@
 import { logout } from './session.js';
 import { getTopArtists, MOCK_MEMBERS } from './data.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
+import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
 // ── Persisted session state ───────────────────────────────────────────────────
 
@@ -37,14 +37,15 @@ const MOCK_JOIN_LEAGUE = {
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 const ROUTES = {
-  WELCOME:        '#welcome',
-  ONBOARDING:     '#onboarding-profile',
-  CREATE_LEAGUE:  '#create-league',
-  SELECT_LEAGUE:  '#select-league',
-  DRAFT:          '#draft-lineup',
-  BASELINE:       '#set-week-1-baseline',
-  WEEKLY_UPDATE:  '#weekly-update',
-  LEAGUE:         '#league/1',
+  WELCOME:         '#welcome',
+  ONBOARDING:      '#onboarding-profile',
+  CREATE_LEAGUE:   '#create-league',
+  SELECT_LEAGUE:   '#select-league',
+  SPOTIFY_CONNECT: '#spotify-connect',
+  DRAFT:           '#draft-lineup',
+  BASELINE:        '#set-week-1-baseline',
+  WEEKLY_UPDATE:   '#weekly-update',
+  LEAGUE:          '#league/1',
 };
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
@@ -78,13 +79,22 @@ async function renderRoute(route, state = {}) {
     case ROUTES.WELCOME:       return showWelcome();
     case ROUTES.ONBOARDING:    return showOnboarding();
     case ROUTES.CREATE_LEAGUE: return showCreateLeague();
-    case ROUTES.SELECT_LEAGUE: return showSelectLeague();
-    case ROUTES.DRAFT:         return showDraft(state.preSelected ?? []);
+    case ROUTES.SELECT_LEAGUE:   return showSelectLeague();
+    case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect();
+    case ROUTES.DRAFT:           return showDraft(state.preSelected ?? []);
     case ROUTES.BASELINE:      return showBaselineEntry(getLineup());
     case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(getLineup(), state.weekNumber);
     case ROUTES.LEAGUE:        return showScore(getLineup());
     default:                   return autoNavigate();
   }
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Returns true if the user hasn't yet been prompted to connect Spotify.
+// Once they connect or explicitly skip, spotifyConnected is set (true/false).
+function shouldPromptSpotify() {
+  return loadProfile()?.spotifyConnected === undefined;
 }
 
 // ── Auto-derive correct route from app state ──────────────────────────────────
@@ -106,7 +116,7 @@ async function autoNavigate() {
 
   const lineup = getLineup();
   if (!lineup) {
-    navigate(ROUTES.DRAFT);
+    navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
     return;
   }
 
@@ -169,9 +179,25 @@ function showSelectLeague() {
         maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
       });
       clearLineup();
-      navigate(ROUTES.DRAFT);
+      navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
     },
     () => { navigate(ROUTES.ONBOARDING); },
+  );
+}
+
+function showSpotifyConnect() {
+  const intent = loadIntent();
+  const backRoute = intent === 'create' ? ROUTES.LEAGUE : ROUTES.SELECT_LEAGUE;
+  renderSpotifyConnect(
+    () => {
+      saveProfile({ ...loadProfile(), spotifyConnected: true });
+      navigate(ROUTES.DRAFT);
+    },
+    () => {
+      saveProfile({ ...loadProfile(), spotifyConnected: false });
+      navigate(ROUTES.DRAFT);
+    },
+    () => { navigate(backRoute); },
   );
 }
 
@@ -257,7 +283,7 @@ async function showScore(lineup) {
       onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
       onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
       onEditLineup() {},
-      onDraft()    { navigate(ROUTES.DRAFT); },
+      onDraft()    { navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT); },
     });
     return;
   }

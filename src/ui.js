@@ -103,20 +103,8 @@ export function renderOnboarding(onContinue, onBack) {
         <div class="onboarding-header">
           <div class="onboarding-step-label">Almost there</div>
           <h1 class="onboarding-title">Set up your profile</h1>
-          <p class="onboarding-sub">Connect Spotify to import your profile, or set it up manually.</p>
+          <p class="onboarding-sub">Create your player profile to get started.</p>
         </div>
-
-        <div class="onboarding-spotify-section">
-          <button class="onboarding-spotify-btn" id="spotify-connect-btn">
-            <svg class="onboarding-spotify-logo" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
-              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.208c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.18.388.565.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.519-.972c3.632-1.102 8.147-.568 11.234 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.376 8.775 6.227 9.71a.937.937 0 11-.543-1.795c3.6-1.09 9.587-.879 13.372 1.341a.937.937 0 01-.142 1.611z"/>
-            </svg>
-            Connect Spotify
-          </button>
-          <p class="onboarding-field-hint">Imports your handle and profile photo from Spotify.</p>
-        </div>
-
-        <div class="onboarding-divider"><span>or set up manually</span></div>
 
         <div class="onboarding-photo-wrap">
           <div class="onboarding-photo" id="onboarding-photo" role="button" tabindex="0" aria-label="Upload profile photo">
@@ -161,13 +149,8 @@ export function renderOnboarding(onContinue, onBack) {
   const photoInput = document.getElementById('photo-input');
   const handleInput = document.getElementById('handle-input');
   const continueBtn = document.getElementById('onboarding-continue-btn');
-  const spotifyBtn = document.getElementById('spotify-connect-btn');
-
-  const MOCK_SPOTIFY_PHOTO = 'https://randomuser.me/api/portraits/men/32.jpg';
-  const MOCK_SPOTIFY_HANDLE = 'rosslindly';
 
   let photoDataUrl = null;
-  let spotifyConnected = false;
 
   function updateContinue() {
     continueBtn.disabled = handleInput.value.trim().length < 2;
@@ -200,45 +183,12 @@ export function renderOnboarding(onContinue, onBack) {
     updateContinue();
   });
 
-  // Spotify (mock)
-  spotifyBtn.addEventListener('click', () => {
-    spotifyConnected = !spotifyConnected;
-    if (spotifyConnected) {
-      // Populate mock data from "Spotify"
-      applyPhoto(MOCK_SPOTIFY_PHOTO);
-      handleInput.value = MOCK_SPOTIFY_HANDLE;
-      spotifyBtn.classList.add('spotify-connected');
-      spotifyBtn.innerHTML = `
-        <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="flex-shrink:0">
-          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-        </svg>
-        Spotify Connected
-      `;
-    } else {
-      spotifyConnected = false;
-      photoDataUrl = null;
-      photoEl.style.backgroundImage = '';
-      photoEl.classList.remove('has-photo');
-      const placeholder = document.getElementById('onboarding-photo-placeholder');
-      if (placeholder) placeholder.style.display = '';
-      handleInput.value = '';
-      spotifyBtn.classList.remove('spotify-connected');
-      spotifyBtn.innerHTML = `
-        <svg class="onboarding-spotify-logo" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-          <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.208c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.18.388.565.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.519-.972c3.632-1.102 8.147-.568 11.234 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.376 8.775 6.227 9.71a.937.937 0 11-.543-1.795c3.6-1.09 9.587-.879 13.372 1.341a.937.937 0 01-.142 1.611z"/>
-        </svg>
-        Connect Spotify
-      `;
-    }
-    updateContinue();
-  });
-
   document.getElementById('onboarding-back-btn').addEventListener('click', onBack);
 
   continueBtn.addEventListener('click', () => {
     const handle = handleInput.value.trim();
     if (handle.length < 2) return;
-    onContinue({ handle: `@${handle}`, photo: photoDataUrl, spotifyConnected });
+    onContinue({ handle: `@${handle}`, photo: photoDataUrl });
   });
 }
 
@@ -486,6 +436,51 @@ export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
       monthlyListeners: parseInt(inputs[i].value, 10),
     }));
     onSubmit(entries);
+  });
+}
+
+// --- Spotify Connect View ---
+
+export function renderSpotifyConnect(onConnect, onSkip, onBack) {
+  app.innerHTML = `
+    <div class="view view-onboarding">
+      <div class="onboarding-card">
+        <button class="btn-back" id="spotify-back-btn">← Back</button>
+
+        <div class="onboarding-header">
+          <div class="onboarding-step-label">Almost ready</div>
+          <h1 class="onboarding-title">Connect Spotify</h1>
+          <p class="onboarding-sub">We use your Spotify listening history to build your draft roster.</p>
+        </div>
+
+        <div class="onboarding-spotify-section">
+          <button class="onboarding-spotify-btn" id="spotify-connect-btn">
+            <svg class="onboarding-spotify-logo" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" width="20" height="20">
+              <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.623.623 0 01-.857.208c-2.348-1.435-5.304-1.76-8.785-.964a.623.623 0 11-.277-1.215c3.809-.87 7.076-.496 9.712 1.115.294.18.388.565.207.856zm1.223-2.722a.78.78 0 01-1.072.257c-2.687-1.652-6.785-2.131-9.965-1.166a.78.78 0 01-.973-.519.781.781 0 01.519-.972c3.632-1.102 8.147-.568 11.234 1.328a.78.78 0 01.257 1.072zm.105-2.835C14.692 8.95 9.376 8.775 6.227 9.71a.937.937 0 11-.543-1.795c3.6-1.09 9.587-.879 13.372 1.341a.937.937 0 01-.142 1.611z"/>
+            </svg>
+            Connect Spotify
+          </button>
+          <p class="onboarding-field-hint">Your top artists from Spotify will populate your draft roster.</p>
+        </div>
+
+        <button class="btn-secondary" id="spotify-skip-btn" style="margin-top:1.25rem;width:100%">Skip for now</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('spotify-back-btn').addEventListener('click', onBack);
+  document.getElementById('spotify-skip-btn').addEventListener('click', onSkip);
+
+  document.getElementById('spotify-connect-btn').addEventListener('click', () => {
+    const btn = document.getElementById('spotify-connect-btn');
+    btn.classList.add('spotify-connected');
+    btn.innerHTML = `
+      <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="flex-shrink:0">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+      </svg>
+      Spotify Connected
+    `;
+    setTimeout(() => onConnect(), 600);
   });
 }
 
