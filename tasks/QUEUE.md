@@ -9,7 +9,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [x] monthly-listeners-model.md    Swap popularity (0–100) for monthlyListeners throughout data model
 - [x] listener-baseline-entry.md    Manual entry of Week 1 listener counts after drafting
 - [x] weekly-update-prompt.md       Friday prompt to enter updated listener counts each week
-- [ ] weekly-score-calculation.md   Score by listener growth; supersedes scoring-refactor.md
+- [x] weekly-score-calculation.md   Score by listener growth; supersedes scoring-refactor.md
 
 ## Pre-Multiplayer Alpha (do before inviting friends)
 
@@ -31,11 +31,13 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] share-draft.md           Clipboard sharing of lineup and score
 - [ ] draft-history.md         Persist and display past draft results
 - [x] remove-league-scoring.md Remove the "Scoring" section from the league invite screen
+- [ ] url-routing.md               Hash-based routing so Back button works and screens are deep-linkable
 - [ ] avatar-placeholder-images.md Replace initial-letter avatars with placeholder people images throughout
 - [ ] profile-header-settings.md   Show profile avatar and name in top right corner of main screens; build out a Settings screen
 - [ ] draft-already-taken.md   Show some artists on the Draft screen as already claimed by other players and un-draftable
 - [ ] league-start-date.md     Add a Start Date field to each league using placeholder data (superseded by league-create)
 - [x] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
-- [ ] scoring-refactor.md      Proportional scoring + streak bonuses — superseded by weekly-score-calculation.md for alpha; revisit post-alpha
+- [x] scoring-refactor.md      Proportional scoring based on monthly listeners (Alpha)
+- [ ] streak-bonuses.md        Streak bonus points for consecutive weekly listener growth
 - [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings

@@ -75,7 +75,7 @@ export function renderWelcome(onJoin, onCreate) {
             <div class="step-num">3</div>
             <div class="step-body">
               <strong>See who rose</strong>
-              <span>Come back weekly. +3 pts if they climbed · +1 if steady · 0 if they dropped.</span>
+              <span>Come back weekly. Points scale with listener growth — the bigger the climb, the bigger the score.</span>
             </div>
           </div>
         </div>
@@ -672,7 +672,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
           ` : `
           <ul class="artist-list">
             ${results.map(r => {
-              const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points === 1 ? 'lh-pts-flat' : 'lh-pts-zero';
+              const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points > 0 ? 'lh-pts-flat' : 'lh-pts-zero';
               const ptsLabel = !leagueStarted ? '—' : r.points > 0 ? `+${r.points}` : '0';
               const statsRows = buildArtistStatsRows(r.id, snapshots);
               return `
@@ -681,6 +681,12 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
                     <div class="artist-avatar" style="background:${artistColor(r.id)}">${escapeHtml(initials(r.name))}</div>
                     <div class="artist-info">
                       <div class="artist-name">${escapeHtml(r.name)}</div>
+                      ${leagueStarted && r.change != null ? (() => {
+                        const deltaAbs = fmtListeners(Math.abs(r.change));
+                        const deltaStr = r.change === 0 ? '0' : `${r.change > 0 ? '+' : '-'}${deltaAbs}`;
+                        const deltaCls = r.change > 0 ? 'change-up' : r.change < 0 ? 'change-down' : 'change-flat';
+                        return `<div class="lh-artist-listeners">${fmtListeners(r.listenersThen) ?? '—'} → ${fmtListeners(r.listenersNow) ?? '—'} <span class="${deltaCls}">(${deltaStr})</span></div>`;
+                      })() : ''}
                       ${statsRows ? `<button class="btn-stats-toggle" data-id="${escapeHtml(r.id)}">Stats ▾</button>` : ''}
                     </div>
                     <div class="lh-artist-pts ${ptsCls}">${ptsLabel} <span class="lh-pts-suffix">pts</span></div>
@@ -690,6 +696,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               `;
             }).join('')}
           </ul>
+          ${!leagueStarted && results.length > 0 ? `<p class="lh-scores-pending-hint">Scores update after your first weekly check-in</p>` : ''}
           `}
         </section>
 
@@ -720,7 +727,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
       </div>
 
       <footer class="results-footer">
-        Scores update weekly · +3 if listeners grew · +1 if unchanged · 0 if they dropped
+        Scores update weekly · 1 pt per 1% listener growth · +1 if unchanged · 0 if they dropped
       </footer>
     </div>
   `;

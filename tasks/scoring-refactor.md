@@ -1,15 +1,33 @@
-# Scoring Refactor
+# Scoring Refactor — Proportional Scoring
 
-Refactor the scoring system to use more nuanced point calculations.
+Refactor `scoreLineup()` to award points proportional to an artist's listener growth percentage, rather than flat values.
 
 ## Goals
 
-- **Proportional scoring based on monthly listeners** — point values should scale relative to an artist's monthly listener count rather than using flat values
-- **Streak bonuses** — award bonus points when an artist's listener count increases for multiple consecutive days or weeks in a row
+- **Proportional scoring based on monthly listeners** — points scale with % listener growth so a small artist and a large artist are on equal footing
+
+## Current behavior
+
+`scoreLineup()` in `src/scoring.js` awards flat points:
+- Growth → 3 pts
+- Flat → 1 pt
+- Decline → 0 pts
+
+## New behavior
+
+Replace the flat formula with percentage-based growth scoring:
+
+| Condition | Points |
+|---|---|
+| No baseline data | 0 |
+| Listener decline | 0 |
+| Flat (0 change) | 1 (stability reward) |
+| Growth | `Math.max(1, Math.round((change / baseline) * 100))` — 1 pt per 1% growth |
+
+This normalizes scores across artist sizes (a 5% growth always earns ~5 pts whether the artist has 100K or 10M listeners).
 
 ## Notes
 
-- Define streak thresholds (e.g. 3-day streak, 7-day streak, multi-week streak) and decide on bonus multipliers or flat bonuses
-- May require storing historical listener snapshots to detect streaks
-- Consider how streaks interact with the Spotify data sync cadence (see `spotify-popularity-sync.md`)
+- Only modify `scoreLineup()` — no other storage or model changes needed
+- Streak bonuses are tracked separately in `streak-bonuses.md`
 - Unit test coverage should follow from `scoring-unit-tests.md`

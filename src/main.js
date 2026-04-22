@@ -1,7 +1,7 @@
 // main.js — Entry point
 import { logout } from './session.js';
-import { getTopArtists, getArtistsByIds, MOCK_MEMBERS } from './data.js';
-import { saveLineup, getLineup, clearLineup, scoreLineup, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
+import { getTopArtists, MOCK_MEMBERS } from './data.js';
+import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
 import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
 let welcomeSeen = false;
@@ -176,30 +176,20 @@ async function showScore(lineup) {
   const isSolo = league?.teamCount === 1;
 
   if (leagueStarted) {
-    renderLoading('Calculating score…');
-    const userIds = lineup.map(a => a.id);
-    const memberIds = isSolo ? [] : MOCK_MEMBERS.flatMap(m => m.lineup.map(a => a.id));
-    const allIds = [...new Set([...userIds, ...memberIds])];
-    const liveArtists = await getArtistsByIds(allIds);
-    const liveById = Object.fromEntries(liveArtists.map(a => [a.id, a]));
-
-    ({ results, totalPoints } = scoreLineup(lineup, userIds.map(id => liveById[id]).filter(Boolean)));
-    memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => {
-      const live = m.lineup.map(a => liveById[a.id]).filter(Boolean);
-      const { totalPoints: pts } = scoreLineup(m.lineup, live);
-      return { handle: m.handle, picks: m.lineup, totalPoints: pts };
-    });
+    const { results: seasonResults, totalPoints: seasonTotal } = scoreSeason(snapshots);
+    const seasonById = Object.fromEntries(seasonResults.map(r => [r.id, r]));
+    results = lineup.map(a => seasonById[a.id] ?? { id: a.id, name: a.name, points: 0, listenersThen: null, listenersNow: null, change: null });
+    totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(1));
+    memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
   } else {
-    renderLoading('Loading lineup…');
-    const week1 = getSnapshots().find(s => s.week === 1);
+    const week1 = snapshots.find(s => s.week === 1);
     const week1ById = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
     results = lineup.map(a => {
       const baseline = week1ById[a.id] ?? a.monthlyListeners;
-      return { id: a.id, name: a.name, points: 0, change: 0, listenersThen: baseline, listenersNow: baseline, savedAt: a.savedAt };
+      return { id: a.id, name: a.name, points: 0, change: null, listenersThen: baseline, listenersNow: baseline };
     });
     totalPoints = 0;
     memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
-    await new Promise(r => setTimeout(r, 200));
   }
 
   const standings = [

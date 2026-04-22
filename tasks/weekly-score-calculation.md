@@ -4,7 +4,7 @@
 Calculate and display points based on the change in monthly listeners between the current week's snapshot and the previous week's. Update League Home to show listener counts, deltas, and total points per artist.
 
 ## Context
-Supersedes the existing popularity-delta scoring in `scoring.js` and the ideas in `scoring-refactor.md`. Points are based on real listener growth, not a 0–100 popularity index. For the solo alpha, scoring is simple: raw listener growth counts. Proportional/streak scoring from `scoring-refactor.md` can layer on top later.
+Supersedes the existing popularity-delta scoring in `scoring.js`. Points are based on real listener growth, not a 0–100 popularity index. Adopts the proportional scoring formula from `scoring-refactor.md` (1 pt per 1% weekly growth), with week-over-week accumulation as the core mechanic. Streak bonuses from `streak-bonuses.md` can layer on top post-alpha.
 
 ## Inputs
 - `src/scoring.js` — replace `scoreLineup()` with `scoreWeek(currentSnapshot, previousSnapshot)` that returns per-artist deltas and total points
@@ -13,12 +13,15 @@ Supersedes the existing popularity-delta scoring in `scoring.js` and the ideas i
 - `src/style.css` — style the listener delta display (green for growth, red for decline, neutral for flat)
 
 ## Scoring Formula (Solo Alpha)
-- **+1 point** per 10,000 listeners gained (rounded down)
+- **Proportional growth**: `max(0.1, round((change / previousWeekListeners) * 100, 1))` — 1 pt per 1% weekly listener growth
 - **0 points** for no change or listener loss
-- Keep it simple — no multipliers or streaks yet
+- **1 point** for flat (stability reward)
+- No baseline data → 0 points
+- Points from each week accumulate into a running season total
+- No multipliers or streaks yet
 
 ## Acceptance Criteria
-- [ ] `scoreWeek(current, previous)` computes delta per artist and total points using the formula above
+- [ ] `scoreWeek(current, previous)` computes proportional % growth per artist (1 pt per 1% growth, 1 pt for flat, 0 for decline) and total points
 - [ ] If only one snapshot exists (Week 1 baseline, no update yet), League Home shows listener counts with 0 points and a "Scores update after your first weekly check-in" message
 - [ ] If two or more snapshots exist, League Home shows the week-over-week delta and earned points
 - [ ] Artist rows display: name | last week listeners (formatted) | this week listeners (formatted) | delta (e.g. "+120K") | points earned
