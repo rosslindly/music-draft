@@ -1,6 +1,11 @@
-// data.js — Mock music data layer
+// data.js — Music data layer (Spotify API + mock fallback)
 
-const ARTISTS = [
+import { isLoggedIn, getAccessToken } from './session.js';
+
+const TOP_ARTISTS_KEY = 'md_top_artists';
+
+// Fallback mock roster used when Spotify is not connected
+const MOCK_ARTISTS = [
   { id: 'a01', name: 'Taylor Swift',       genres: ['pop', 'country pop'],          monthlyListeners: 100_200_000 },
   { id: 'a02', name: 'Kendrick Lamar',     genres: ['hip-hop', 'rap'],              monthlyListeners:  65_400_000 },
   { id: 'a03', name: 'Sabrina Carpenter',  genres: ['pop'],                          monthlyListeners:  55_800_000 },
@@ -101,12 +106,56 @@ export const MOCK_MEMBERS = [
   },
 ];
 
-export function getTopArtists() {
-  return new Promise(resolve => setTimeout(() => resolve([...ARTISTS]), 400));
+// Fetch the user's top 30 short-term artists from Spotify.
+// Falls back to MOCK_ARTISTS if Spotify is not connected or the fetch fails.
+// Results are cached in localStorage so Edit Lineup re-uses the same pool.
+export async function getTopArtists() {
+  if (!isLoggedIn()) return [...MOCK_ARTISTS];
+
+  const cached = localStorage.getItem(TOP_ARTISTS_KEY);
+  if (cached) return JSON.parse(cached);
+
+  try {
+    let token = await getAccessToken();
+    let res = await fetch('https://api.spotify.com/v1/me/top/artists?limit=30&time_range=short_term', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.status === 401) {
+      token = await getAccessToken({ forceRefresh: true });
+      res = await fetch('https://api.spotify.com/v1/me/top/artists?limit=30&time_range=short_term', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    }
+
+    if (!res.ok) throw new Error(`Spotify API ${res.status}`);
+
+    const { items } = await res.json();
+    const artists = items.map(a => ({
+      id: a.id,
+      name: a.name,
+      genres: a.genres,
+      // Spotify doesn't expose monthlyListeners via the API; use followers.total
+      // as a proxy for display. Real listener counts are entered manually at baseline.
+      monthlyListeners: a.followers?.total ?? 0,
+      imageUrl: a.images?.[0]?.url ?? null,
+    }));
+
+    localStorage.setItem(TOP_ARTISTS_KEY, JSON.stringify(artists));
+    return artists;
+  } catch (err) {
+    console.warn('Failed to fetch Spotify top artists, falling back to mock:', err);
+    return [...MOCK_ARTISTS];
+  }
+}
+
+export function clearTopArtistsCache() {
+  localStorage.removeItem(TOP_ARTISTS_KEY);
 }
 
 export function getArtistsByIds(ids) {
-  const byId = Object.fromEntries(ARTISTS.map(a => [a.id, a]));
-  const results = ids.map(id => byId[id] ?? null).filter(Boolean);
-  return new Promise(resolve => setTimeout(() => resolve(results), 600));
+  const cached = localStorage.getItem(TOP_ARTISTS_KEY);
+  const pool = cached ? JSON.parse(cached) : MOCK_ARTISTS;
+  const byId = Object.fromEntries(pool.map(a => [a.id, a]));
+  return Promise.resolve(ids.map(id => byId[id] ?? null).filter(Boolean));
 }

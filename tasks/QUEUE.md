@@ -14,7 +14,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 ## Pre-Multiplayer Alpha (do before inviting friends)
 
 - [ ] supabase-setup.md             Migrate localStorage to Supabase Postgres backend
-- [ ] spotify-oauth.md              Implement OAuth2 PKCE flow for Spotify login
+- [x] spotify-oauth.md              Implement OAuth2 PKCE flow for Spotify login
 
 ## Backlog
 
@@ -26,7 +26,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] scoring-unit-tests.md    Unit tests for scoring.js point logic
 - [ ] data-rng-tests.md        Unit tests for seeded RNG in data.js (superseded by monthly-listeners-model; may be removed)
 - [ ] error-handling.md        Wire up renderError() and handle all failure paths
-- [ ] spotify-top-artists.md   Replace mock getTopArtists() with real Spotify API
+- [x] spotify-top-artists.md   Replace mock getTopArtists() with real Spotify API
 - [ ] spotify-popularity-sync.md Replace mock getArtistsByIds() with live Spotify data
 - [ ] share-draft.md           Clipboard sharing of lineup and score
 - [ ] draft-history.md         Persist and display past draft results

@@ -1,6 +1,6 @@
 // main.js — Entry point
-import { logout } from './session.js';
-import { getTopArtists, MOCK_MEMBERS } from './data.js';
+import { login, handleCallback, logout } from './session.js';
+import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
 import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
@@ -20,6 +20,7 @@ function clearAll() {
   clearLeague();
   clearSnapshots();
   clearSession();
+  clearTopArtistsCache();
 }
 
 // ── Runtime state ─────────────────────────────────────────────────────────────
@@ -189,9 +190,8 @@ function showSpotifyConnect() {
   const intent = loadIntent();
   const backRoute = intent === 'create' ? ROUTES.LEAGUE : ROUTES.SELECT_LEAGUE;
   renderSpotifyConnect(
-    () => {
-      saveProfile({ ...loadProfile(), spotifyConnected: true });
-      navigate(ROUTES.DRAFT);
+    async () => {
+      await login(); // redirects to Spotify — execution stops here
     },
     () => {
       saveProfile({ ...loadProfile(), spotifyConnected: false });
@@ -334,13 +334,38 @@ async function showScore(lineup) {
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
-const initialHash = location.hash;
-if (initialHash && Object.values(ROUTES).includes(initialHash)) {
-  // Deep-linked URL: honour it and render that screen
-  history.replaceState({ route: initialHash }, '', initialHash);
-  isInitialLoad = false;
-  renderRoute(initialHash, {});
-} else {
-  // No recognised hash: derive the correct screen from stored app state
+const urlParams = new URLSearchParams(window.location.search);
+const oauthCode = urlParams.get('code');
+const oauthError = urlParams.get('error');
+
+if (oauthCode) {
+  // Returning from Spotify OAuth — exchange code for tokens
+  renderLoading('Connecting to Spotify…');
+  handleCallback(oauthCode)
+    .then(() => {
+      saveProfile({ ...loadProfile(), spotifyConnected: true });
+      history.replaceState({}, '', '/');
+      isInitialLoad = false;
+      navigate(ROUTES.DRAFT);
+    })
+    .catch((err) => {
+      console.error('Spotify OAuth callback failed:', err);
+      history.replaceState({}, '', '/');
+      autoNavigate();
+    });
+} else if (oauthError) {
+  // User denied Spotify access on the Spotify auth page
+  saveProfile({ ...loadProfile(), spotifyConnected: false });
+  history.replaceState({}, '', '/');
   autoNavigate();
+} else {
+  // Normal page load — deep-link or auto-navigate
+  const initialHash = location.hash;
+  if (initialHash && Object.values(ROUTES).includes(initialHash)) {
+    history.replaceState({ route: initialHash }, '', initialHash);
+    isInitialLoad = false;
+    renderRoute(initialHash, {});
+  } else {
+    autoNavigate();
+  }
 }
