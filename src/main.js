@@ -4,10 +4,26 @@ import { getTopArtists, MOCK_MEMBERS } from './data.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
 import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
-let welcomeSeen = false;
-let onboardingDone = false;
-let userProfile = null;
-let userIntent = null; // 'create' | 'join'
+// ── Persisted session state ───────────────────────────────────────────────────
+
+const PROFILE_KEY = 'md_profile';
+const INTENT_KEY  = 'md_intent';
+
+function saveProfile(profile) { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
+function loadProfile()        { const r = localStorage.getItem(PROFILE_KEY); return r ? JSON.parse(r) : null; }
+function saveIntent(intent)   { localStorage.setItem(INTENT_KEY, intent); }
+function loadIntent()         { return localStorage.getItem(INTENT_KEY); }
+function clearSession()       { localStorage.removeItem(PROFILE_KEY); localStorage.removeItem(INTENT_KEY); }
+
+function clearAll() {
+  clearLineup();
+  clearLeague();
+  clearSnapshots();
+  clearSession();
+}
+
+// ── Runtime state ─────────────────────────────────────────────────────────────
+
 let weeklyBannerDismissed = false;
 
 const MOCK_JOIN_LEAGUE = {
@@ -18,88 +34,163 @@ const MOCK_JOIN_LEAGUE = {
   maxTeams: 10,
 };
 
-async function main() {
-  if (!welcomeSeen) {
-    renderWelcome(
-      () => { welcomeSeen = true; userIntent = 'join'; main(); },
-      () => { welcomeSeen = true; userIntent = 'create'; main(); },
-    );
-    return;
-  }
+// ── Routes ────────────────────────────────────────────────────────────────────
 
-  if (!onboardingDone) {
-    renderOnboarding(
-      (profile) => { onboardingDone = true; userProfile = profile; main(); },
-      () => { welcomeSeen = false; main(); },
-    );
+const ROUTES = {
+  WELCOME:        '#welcome',
+  ONBOARDING:     '#onboarding-profile',
+  CREATE_LEAGUE:  '#create-league',
+  SELECT_LEAGUE:  '#select-league',
+  DRAFT:          '#draft-lineup',
+  BASELINE:       '#set-week-1-baseline',
+  WEEKLY_UPDATE:  '#weekly-update',
+  LEAGUE:         '#league/1',
+};
+
+// ── Navigation helpers ────────────────────────────────────────────────────────
+
+let isInitialLoad = true;
+
+function navigate(hash, state = {}) {
+  const fullState = { route: hash, ...state };
+  if (isInitialLoad) {
+    history.replaceState(fullState, '', hash);
+    isInitialLoad = false;
+  } else {
+    history.pushState(fullState, '', hash);
+  }
+  renderRoute(hash, state);
+}
+
+window.addEventListener('popstate', (e) => {
+  const route = e.state?.route;
+  if (route) {
+    renderRoute(route, e.state);
+  } else {
+    autoNavigate();
+  }
+});
+
+// ── Route renderer ────────────────────────────────────────────────────────────
+
+async function renderRoute(route, state = {}) {
+  switch (route) {
+    case ROUTES.WELCOME:       return showWelcome();
+    case ROUTES.ONBOARDING:    return showOnboarding();
+    case ROUTES.CREATE_LEAGUE: return showCreateLeague();
+    case ROUTES.SELECT_LEAGUE: return showSelectLeague();
+    case ROUTES.DRAFT:         return showDraft(state.preSelected ?? []);
+    case ROUTES.BASELINE:      return showBaselineEntry(getLineup());
+    case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(getLineup(), state.weekNumber);
+    case ROUTES.LEAGUE:        return showScore(getLineup());
+    default:                   return autoNavigate();
+  }
+}
+
+// ── Auto-derive correct route from app state ──────────────────────────────────
+
+async function autoNavigate() {
+  const profile = loadProfile();
+
+  if (!profile) {
+    navigate(ROUTES.WELCOME);
     return;
   }
 
   const league = getLeague();
   if (!league) {
-    if (userIntent === 'create') {
-      renderCreateLeague(
-        (newLeague) => {
-          saveLeague({
-            ...newLeague,
-            admin: userProfile?.handle ?? '@you',
-            teamCount: 1,
-            maxTeams: newLeague.maxParticipants ?? 10,
-          });
-          showScore(null);
-        },
-        () => { onboardingDone = false; main(); },
-      );
-    } else {
-      renderLeague(
-        MOCK_JOIN_LEAGUE,
-        () => {
-          saveLeague({
-            name: MOCK_JOIN_LEAGUE.name,
-            inviteCode: 'INDIE1',
-            createdAt: new Date().toISOString(),
-            startDate: null,
-            admin: MOCK_JOIN_LEAGUE.admin,
-            teamCount: MOCK_JOIN_LEAGUE.teamCount,
-            maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
-          });
-          clearLineup();
-          main();
-        },
-        () => { onboardingDone = false; main(); },
-      );
-    }
+    const intent = loadIntent();
+    navigate(intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE);
     return;
   }
 
   const lineup = getLineup();
-  if (lineup) {
-    const hasBaseline = getSnapshots().some(s => s.week === 1);
-    if (hasBaseline) {
-      await showScore(lineup);
-    } else {
-      showBaselineEntry(lineup);
-    }
-  } else {
-    await showDraft();
+  if (!lineup) {
+    navigate(ROUTES.DRAFT);
+    return;
   }
+
+  const hasBaseline = getSnapshots().some(s => s.week === 1);
+  if (!hasBaseline) {
+    navigate(ROUTES.BASELINE);
+    return;
+  }
+
+  navigate(ROUTES.LEAGUE);
+}
+
+// ── Screen functions ──────────────────────────────────────────────────────────
+
+function showWelcome() {
+  renderWelcome(
+    () => { saveIntent('join');   navigate(ROUTES.ONBOARDING); },
+    () => { saveIntent('create'); navigate(ROUTES.ONBOARDING); },
+  );
+}
+
+function showOnboarding() {
+  renderOnboarding(
+    (profile) => {
+      saveProfile(profile);
+      const intent = loadIntent();
+      navigate(intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE);
+    },
+    () => { navigate(ROUTES.WELCOME); },
+  );
+}
+
+function showCreateLeague() {
+  const profile = loadProfile();
+  renderCreateLeague(
+    (newLeague) => {
+      saveLeague({
+        ...newLeague,
+        admin: profile?.handle ?? '@you',
+        teamCount: 1,
+        maxTeams: newLeague.maxParticipants ?? 10,
+      });
+      navigate(ROUTES.LEAGUE);
+    },
+    () => { navigate(ROUTES.ONBOARDING); },
+  );
+}
+
+function showSelectLeague() {
+  renderLeague(
+    MOCK_JOIN_LEAGUE,
+    () => {
+      saveLeague({
+        name: MOCK_JOIN_LEAGUE.name,
+        inviteCode: 'INDIE1',
+        createdAt: new Date().toISOString(),
+        startDate: null,
+        admin: MOCK_JOIN_LEAGUE.admin,
+        teamCount: MOCK_JOIN_LEAGUE.teamCount,
+        maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
+      });
+      clearLineup();
+      navigate(ROUTES.DRAFT);
+    },
+    () => { navigate(ROUTES.ONBOARDING); },
+  );
 }
 
 async function showDraft(preSelected = []) {
+  const intent = loadIntent();
+  const backRoute = intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE;
   renderLoading('Loading artists…');
   const topArtists = await getTopArtists();
   renderDraft(
     topArtists,
     (selected) => {
       saveLineup(selected);
-      // Set startDate on first draft submission
       const league = getLeague();
       if (league && !league.startDate) {
         saveLeague({ ...league, startDate: new Date().toISOString() });
       }
-      showBaselineEntry(getLineup());
+      navigate(ROUTES.BASELINE);
     },
-    () => { main(); },
+    () => { navigate(backRoute); },
     preSelected,
   );
 }
@@ -109,46 +200,46 @@ function showBaselineEntry(lineup) {
   const existing = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
   renderBaselineEntry(lineup, existing, (entries) => {
     saveSnapshot(1, entries);
-    showScore(getLineup());
+    navigate(ROUTES.LEAGUE);
   });
 }
 
-function showWeeklyUpdate(lineup) {
+// overrideWeek lets the manual-update path bypass the date-derived week number
+function showWeeklyUpdate(lineup, overrideWeek) {
   const league = getLeague();
-  const weekNumber = getCurrentWeekNumber(league?.startDate);
+  const weekNumber = overrideWeek ?? getCurrentWeekNumber(league?.startDate);
   renderWeeklyUpdate(lineup, weekNumber, (entries) => {
     saveSnapshot(weekNumber, entries);
-    showScore(getLineup());
+    navigate(ROUTES.LEAGUE);
   });
 }
 
 async function showScore(lineup) {
+  const profile = loadProfile();
   const league = getLeague();
-  // Scoring only activates once there's a weekly update (week > 1) to compare against the baseline
   const leagueStarted = getSnapshots().some(s => s.week > 1);
 
-  // Weekly update banner: show if baseline exists, current week > 1, and not yet submitted
   const snapshots = getSnapshots();
   const hasBaseline = snapshots.some(s => s.week === 1);
 
   const weekNumber = getCurrentWeekNumber(league?.startDate);
   const updateDue = hasBaseline && weekNumber != null && weekNumber > 1 && !hasSubmittedThisWeek(league?.startDate);
 
-  // Manual update: next week after the highest recorded snapshot (bypasses date check)
   const maxSnapshotWeek = hasBaseline ? Math.max(...snapshots.map(s => s.week)) : null;
   const nextWeekNumber = maxSnapshotWeek != null ? maxSnapshotWeek + 1 : null;
   const canManuallyUpdate = hasBaseline && lineup && nextWeekNumber != null && !snapshots.some(s => s.week === nextWeekNumber);
+
   const weeklyUpdate = updateDue && !weeklyBannerDismissed && lineup
     ? {
         weekNumber,
-        onUpdate: () => showWeeklyUpdate(lineup),
+        onUpdate: () => { navigate(ROUTES.WEEKLY_UPDATE, { weekNumber }); },
         onDismiss: () => { weeklyBannerDismissed = true; showScore(lineup); },
       }
     : null;
 
   const displayLeague = {
     name: league?.name ?? 'My League',
-    admin: league?.admin ?? userProfile?.handle ?? '@you',
+    admin: league?.admin ?? profile?.handle ?? '@you',
     daysUntilStart: 0,
     teamCount: league?.teamCount ?? 1,
     maxTeams: league?.maxTeams ?? 10,
@@ -159,24 +250,23 @@ async function showScore(lineup) {
     renderScore({
       results: [],
       totalPoints: 0,
-      standings: [{ handle: userProfile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
+      standings: [{ handle: profile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
       league: displayLeague,
       leagueStarted: false,
       weeklyUpdate: null,
-      onNewDraft() { clearLineup(); clearLeague(); clearSnapshots(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
-      onLogout() { logout(); clearLineup(); clearLeague(); clearSnapshots(); main(); },
+      onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
+      onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
       onEditLineup() {},
-      onDraft() { showDraft(); },
+      onDraft()    { navigate(ROUTES.DRAFT); },
     });
     return;
   }
 
   let results, totalPoints, memberStandings;
-
   const isSolo = league?.teamCount === 1;
 
   if (leagueStarted) {
-    const { results: seasonResults, totalPoints: seasonTotal } = scoreSeason(snapshots);
+    const { results: seasonResults } = scoreSeason(snapshots);
     const seasonById = Object.fromEntries(seasonResults.map(r => [r.id, r]));
     results = lineup.map(a => seasonById[a.id] ?? { id: a.id, name: a.name, points: 0, listenersThen: null, listenersNow: null, change: null });
     totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(1));
@@ -193,7 +283,7 @@ async function showScore(lineup) {
   }
 
   const standings = [
-    { handle: userProfile?.handle ?? '@you', picks: results, totalPoints, isYou: true },
+    { handle: profile?.handle ?? '@you', picks: results, totalPoints, isYou: true },
     ...memberStandings,
   ];
   if (leagueStarted) standings.sort((a, b) => b.totalPoints - a.totalPoints);
@@ -207,16 +297,24 @@ async function showScore(lineup) {
     snapshots,
     weeklyUpdate,
     manualUpdateWeek: canManuallyUpdate ? nextWeekNumber : null,
-    onManualWeeklyUpdate: canManuallyUpdate ? () => {
-      renderWeeklyUpdate(lineup, nextWeekNumber, (entries) => {
-        saveSnapshot(nextWeekNumber, entries);
-        showScore(getLineup());
-      });
-    } : null,
-    onNewDraft() { clearLineup(); clearLeague(); clearSnapshots(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
-    onLogout() { logout(); clearLineup(); clearLeague(); clearSnapshots(); main(); },
-    onEditLineup() { showDraft(lineup); },
+    onManualWeeklyUpdate: canManuallyUpdate
+      ? () => { navigate(ROUTES.WEEKLY_UPDATE, { weekNumber: nextWeekNumber }); }
+      : null,
+    onNewDraft()   { clearAll(); navigate(ROUTES.WELCOME); },
+    onLogout()     { logout(); clearAll(); navigate(ROUTES.WELCOME); },
+    onEditLineup() { navigate(ROUTES.DRAFT, { preSelected: lineup }); },
   });
 }
 
-main();
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+
+const initialHash = location.hash;
+if (initialHash && Object.values(ROUTES).includes(initialHash)) {
+  // Deep-linked URL: honour it and render that screen
+  history.replaceState({ route: initialHash }, '', initialHash);
+  isInitialLoad = false;
+  renderRoute(initialHash, {});
+} else {
+  // No recognised hash: derive the correct screen from stored app state
+  autoNavigate();
+}

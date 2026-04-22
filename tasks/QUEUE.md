@@ -31,7 +31,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] share-draft.md           Clipboard sharing of lineup and score
 - [ ] draft-history.md         Persist and display past draft results
 - [x] remove-league-scoring.md Remove the "Scoring" section from the league invite screen
-- [ ] url-routing.md               Hash-based routing so Back button works and screens are deep-linkable
+- [x] url-routing.md               Hash-based routing so Back button works and screens are deep-linkable
 - [ ] avatar-placeholder-images.md Replace initial-letter avatars with placeholder people images throughout
 - [ ] profile-header-settings.md   Show profile avatar and name in top right corner of main screens; build out a Settings screen
 - [ ] draft-already-taken.md   Show some artists on the Draft screen as already claimed by other players and un-draftable
