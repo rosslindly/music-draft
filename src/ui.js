@@ -26,9 +26,7 @@ function artistColor(id) {
 
 function fmtListeners(n) {
   if (n == null || isNaN(n)) return null;
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
-  return String(n);
+  return n.toLocaleString();
 }
 
 function getGrade(pts) {
