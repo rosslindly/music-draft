@@ -431,6 +431,64 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
   });
 }
 
+// --- Weekly Update Entry View ---
+
+export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
+  app.innerHTML = `
+    <div class="view view-baseline">
+      <div class="baseline-card">
+        <div class="baseline-header">
+          <h1 class="baseline-title">Week ${weekNumber} Listener Update</h1>
+          <p class="baseline-sub">Look up each artist on Spotify and enter their current monthly listeners. This week's counts will be compared against last week's snapshot to calculate your score.</p>
+        </div>
+
+        <ul class="baseline-list" id="weekly-update-list">
+          ${lineup.map(a => `
+            <li class="baseline-row" data-id="${escapeHtml(a.id)}">
+              <div class="artist-avatar baseline-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
+              <div class="baseline-artist-info">
+                <div class="artist-name">${escapeHtml(a.name)}</div>
+              </div>
+              <input
+                type="number"
+                class="baseline-input weekly-update-input"
+                data-id="${escapeHtml(a.id)}"
+                placeholder="e.g. 4200000"
+                min="1"
+                step="1"
+              />
+            </li>
+          `).join('')}
+        </ul>
+
+        <button class="btn-primary baseline-save-btn" id="weekly-update-save-btn" disabled>Save Week ${weekNumber} →</button>
+      </div>
+    </div>
+  `;
+
+  const inputs = [...document.querySelectorAll('.weekly-update-input')];
+  const saveBtn = document.getElementById('weekly-update-save-btn');
+
+  function validate() {
+    const allValid = inputs.every(inp => {
+      const val = parseInt(inp.value, 10);
+      return Number.isInteger(val) && val > 0;
+    });
+    saveBtn.disabled = !allValid;
+  }
+
+  inputs.forEach(inp => inp.addEventListener('input', validate));
+
+  saveBtn.addEventListener('click', () => {
+    const entries = lineup.map((a, i) => ({
+      id: a.id,
+      name: a.name,
+      monthlyListeners: parseInt(inputs[i].value, 10),
+    }));
+    onSubmit(entries);
+  });
+}
+
 // --- Draft View ---
 
 export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
@@ -510,7 +568,35 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
 
 // --- League Home (Score View) ---
 
-export function renderScore({ results, totalPoints, standings, league, leagueStarted, onNewDraft, onLogout, onEditLineup, onDraft }) {
+function buildArtistStatsRows(artistId, snapshots) {
+  if (!snapshots || snapshots.length === 0) return '';
+  const maxWeek = Math.max(...snapshots.map(s => s.week));
+  const rows = [];
+  let prevListeners = null;
+  for (let w = 1; w <= maxWeek; w++) {
+    const snap = snapshots.find(s => s.week === w);
+    const artist = snap?.artists.find(a => a.id === artistId);
+    const listeners = artist?.monthlyListeners ?? null;
+    let changeHtml = '';
+    if (w > 1 && listeners != null && prevListeners != null) {
+      const delta = listeners - prevListeners;
+      const sign = delta > 0 ? '+' : '';
+      const cls = delta > 0 ? 'change-up' : delta < 0 ? 'change-down' : 'change-flat';
+      changeHtml = `<span class="artist-stat-change ${cls}">${sign}${fmtListeners(Math.abs(delta))}</span>`;
+    }
+    rows.push(`
+      <div class="artist-stat-row">
+        <span class="artist-stat-week">Wk ${w}</span>
+        <span class="artist-stat-listeners">${listeners != null ? fmtListeners(listeners) : '—'}</span>
+        ${changeHtml}
+      </div>
+    `);
+    if (listeners != null) prevListeners = listeners;
+  }
+  return rows.join('');
+}
+
+export function renderScore({ results, totalPoints, standings, league, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft }) {
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `
@@ -529,6 +615,18 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
           <button class="btn-logout" id="logout-btn">Sign Out</button>
         </div>
       </header>
+
+      ${weeklyUpdate ? `
+      <div class="update-banner" id="update-banner">
+        <div class="update-banner-inner">
+          <p class="update-banner-text">Week ${weeklyUpdate.weekNumber} is here — time to update your listener counts!</p>
+          <div class="update-banner-actions">
+            <button class="update-banner-btn-primary" id="update-now-btn">Update Now</button>
+            <button class="update-banner-btn-dismiss" id="update-dismiss-btn">Remind me later</button>
+          </div>
+        </div>
+      </div>
+      ` : ''}
 
       <div class="lh-banner">
         <div class="lh-banner-inner">
@@ -561,7 +659,10 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
         <section class="lh-section">
           <div class="lh-section-header">
             <h3 class="lh-section-title">My Lineup</h3>
-            ${!leagueStarted && results.length > 0 ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
+            <div class="lh-section-header-actions">
+              ${manualUpdateWeek ? `<button class="btn-enter-week" id="manual-update-btn">Enter Week ${manualUpdateWeek}</button>` : ''}
+              ${!leagueStarted && results.length > 0 ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
+            </div>
           </div>
           ${results.length === 0 ? `
             <div class="lh-empty-lineup">
@@ -573,14 +674,18 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
             ${results.map(r => {
               const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points === 1 ? 'lh-pts-flat' : 'lh-pts-zero';
               const ptsLabel = !leagueStarted ? '—' : r.points > 0 ? `+${r.points}` : '0';
+              const statsRows = buildArtistStatsRows(r.id, snapshots);
               return `
                 <li class="artist-card lh-artist-card">
-                  <div class="artist-avatar" style="background:${artistColor(r.id)}">${escapeHtml(initials(r.name))}</div>
-                  <div class="artist-info">
-                    <div class="artist-name">${escapeHtml(r.name)}</div>
-                    ${fmtListeners(r.listenersThen) != null ? `<div class="lh-artist-listeners">Week 1 · ${fmtListeners(r.listenersThen)} listeners</div>` : ''}
+                  <div class="lh-artist-row">
+                    <div class="artist-avatar" style="background:${artistColor(r.id)}">${escapeHtml(initials(r.name))}</div>
+                    <div class="artist-info">
+                      <div class="artist-name">${escapeHtml(r.name)}</div>
+                      ${statsRows ? `<button class="btn-stats-toggle" data-id="${escapeHtml(r.id)}">Stats ▾</button>` : ''}
+                    </div>
+                    <div class="lh-artist-pts ${ptsCls}">${ptsLabel} <span class="lh-pts-suffix">pts</span></div>
                   </div>
-                  <div class="lh-artist-pts ${ptsCls}">${ptsLabel} <span class="lh-pts-suffix">pts</span></div>
+                  ${statsRows ? `<div class="artist-stats-panel" id="stats-panel-${escapeHtml(r.id)}">${statsRows}</div>` : ''}
                 </li>
               `;
             }).join('')}
@@ -622,12 +727,28 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
 
   document.getElementById('new-draft-btn').addEventListener('click', onNewDraft);
   document.getElementById('logout-btn').addEventListener('click', onLogout);
+  if (weeklyUpdate) {
+    document.getElementById('update-now-btn').addEventListener('click', weeklyUpdate.onUpdate);
+    document.getElementById('update-dismiss-btn').addEventListener('click', weeklyUpdate.onDismiss);
+  }
+  if (manualUpdateWeek && onManualWeeklyUpdate) {
+    document.getElementById('manual-update-btn').addEventListener('click', onManualWeeklyUpdate);
+  }
   if (!leagueStarted && results.length > 0) {
     document.getElementById('edit-lineup-btn').addEventListener('click', onEditLineup);
   }
   if (results.length === 0) {
     document.getElementById('lh-draft-cta-btn').addEventListener('click', onDraft ?? onEditLineup);
   }
+  document.querySelectorAll('.btn-stats-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const panel = document.getElementById(`stats-panel-${btn.dataset.id}`);
+      if (!panel) return;
+      const open = panel.classList.toggle('open');
+      btn.textContent = open ? 'Stats ▴' : 'Stats ▾';
+    });
+  });
+
   const copyBtn = document.getElementById('lh-copy-code-btn');
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {

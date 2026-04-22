@@ -1088,6 +1088,30 @@ a:hover { text-decoration: underline; }
   margin-bottom: 0;
 }
 
+.lh-section-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-enter-week {
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.btn-enter-week:hover {
+  border-color: var(--text);
+  color: var(--text);
+}
+
 .btn-edit-lineup {
   background: transparent;
   border: 1px solid var(--accent);
@@ -1113,8 +1137,71 @@ a:hover { text-decoration: underline; }
   margin-bottom: 12px;
 }
 
-.lh-artist-card { cursor: default; }
+.lh-artist-card {
+  cursor: default;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+}
 .lh-artist-card:hover { border-color: var(--border); background: var(--bg-card); }
+
+.lh-artist-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+}
+
+.btn-stats-toggle {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.15s;
+  text-align: left;
+}
+
+.btn-stats-toggle:hover { color: var(--text); }
+
+.artist-stats-panel {
+  display: none;
+  border-top: 1px solid var(--border);
+  padding: 10px 16px 12px 74px; /* align with artist name (avatar 44 + gap 14 + padding 16) */
+  flex-wrap: wrap;
+  gap: 6px 20px;
+}
+
+.artist-stats-panel.open {
+  display: flex;
+}
+
+.artist-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.artist-stat-week {
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 30px;
+}
+
+.artist-stat-listeners {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.artist-stat-change {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
 
 .lh-artist-pts {
   flex-shrink: 0;
@@ -1260,6 +1347,73 @@ a:hover { text-decoration: underline; }
 .btn-copy-code--sm {
   padding: 3px 10px;
   font-size: 0.75rem;
+}
+
+/* === Weekly Update Banner === */
+.update-banner {
+  width: 100%;
+  background: linear-gradient(90deg, rgba(124, 58, 237, 0.18) 0%, rgba(124, 58, 237, 0.08) 100%);
+  border-bottom: 1px solid rgba(124, 58, 237, 0.3);
+  padding: 14px 24px;
+}
+
+.update-banner-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.update-banner-text {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+
+.update-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.update-banner-btn-primary {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 7px 18px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.update-banner-btn-primary:hover { background: var(--accent-dark); }
+
+.update-banner-btn-dismiss {
+  background: transparent;
+  color: var(--text-muted);
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 7px 4px;
+  transition: color 0.15s;
+  font-family: inherit;
+}
+
+.update-banner-btn-dismiss:hover { color: var(--text); }
+
+@media (max-width: 600px) {
+  .update-banner { padding: 12px 16px; }
+  .update-banner-inner { flex-direction: column; align-items: flex-start; gap: 10px; }
 }
 
 /* Footer */

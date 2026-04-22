@@ -1,13 +1,14 @@
 // main.js — Entry point
 import { logout } from './session.js';
 import { getTopArtists, getArtistsByIds, MOCK_MEMBERS } from './data.js';
-import { saveLineup, getLineup, clearLineup, scoreLineup, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderBaselineEntry, renderScore, renderLoading } from './ui.js';
+import { saveLineup, getLineup, clearLineup, scoreLineup, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
+import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
 let welcomeSeen = false;
 let onboardingDone = false;
 let userProfile = null;
 let userIntent = null; // 'create' | 'join'
+let weeklyBannerDismissed = false;
 
 const MOCK_JOIN_LEAGUE = {
   name: 'Indie Tastemakers',
@@ -112,10 +113,38 @@ function showBaselineEntry(lineup) {
   });
 }
 
+function showWeeklyUpdate(lineup) {
+  const league = getLeague();
+  const weekNumber = getCurrentWeekNumber(league?.startDate);
+  renderWeeklyUpdate(lineup, weekNumber, (entries) => {
+    saveSnapshot(weekNumber, entries);
+    showScore(getLineup());
+  });
+}
+
 async function showScore(lineup) {
   const league = getLeague();
   // Scoring only activates once there's a weekly update (week > 1) to compare against the baseline
   const leagueStarted = getSnapshots().some(s => s.week > 1);
+
+  // Weekly update banner: show if baseline exists, current week > 1, and not yet submitted
+  const snapshots = getSnapshots();
+  const hasBaseline = snapshots.some(s => s.week === 1);
+
+  const weekNumber = getCurrentWeekNumber(league?.startDate);
+  const updateDue = hasBaseline && weekNumber != null && weekNumber > 1 && !hasSubmittedThisWeek(league?.startDate);
+
+  // Manual update: next week after the highest recorded snapshot (bypasses date check)
+  const maxSnapshotWeek = hasBaseline ? Math.max(...snapshots.map(s => s.week)) : null;
+  const nextWeekNumber = maxSnapshotWeek != null ? maxSnapshotWeek + 1 : null;
+  const canManuallyUpdate = hasBaseline && lineup && nextWeekNumber != null && !snapshots.some(s => s.week === nextWeekNumber);
+  const weeklyUpdate = updateDue && !weeklyBannerDismissed && lineup
+    ? {
+        weekNumber,
+        onUpdate: () => showWeeklyUpdate(lineup),
+        onDismiss: () => { weeklyBannerDismissed = true; showScore(lineup); },
+      }
+    : null;
 
   const displayLeague = {
     name: league?.name ?? 'My League',
@@ -133,6 +162,7 @@ async function showScore(lineup) {
       standings: [{ handle: userProfile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
       league: displayLeague,
       leagueStarted: false,
+      weeklyUpdate: null,
       onNewDraft() { clearLineup(); clearLeague(); clearSnapshots(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
       onLogout() { logout(); clearLineup(); clearLeague(); clearSnapshots(); main(); },
       onEditLineup() {},
@@ -184,6 +214,15 @@ async function showScore(lineup) {
     standings,
     league: displayLeague,
     leagueStarted,
+    snapshots,
+    weeklyUpdate,
+    manualUpdateWeek: canManuallyUpdate ? nextWeekNumber : null,
+    onManualWeeklyUpdate: canManuallyUpdate ? () => {
+      renderWeeklyUpdate(lineup, nextWeekNumber, (entries) => {
+        saveSnapshot(nextWeekNumber, entries);
+        showScore(getLineup());
+      });
+    } : null,
     onNewDraft() { clearLineup(); clearLeague(); clearSnapshots(); welcomeSeen = false; onboardingDone = false; userProfile = null; userIntent = null; main(); },
     onLogout() { logout(); clearLineup(); clearLeague(); clearSnapshots(); main(); },
     onEditLineup() { showDraft(lineup); },

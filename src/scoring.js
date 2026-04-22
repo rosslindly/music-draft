@@ -57,6 +57,20 @@ export function clearSnapshots() {
   localStorage.removeItem(SNAPSHOTS_KEY);
 }
 
+export function getCurrentWeekNumber(startDate) {
+  if (!startDate) return null;
+  const start = new Date(startDate).getTime();
+  const now = Date.now();
+  if (now < start) return null;
+  return Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)) + 1;
+}
+
+export function hasSubmittedThisWeek(startDate) {
+  const week = getCurrentWeekNumber(startDate);
+  if (week == null) return false;
+  return getSnapshots().some(s => s.week === week);
+}
+
 /**
  * @param {Array} savedArtists - [{id, name, monthlyListeners, savedAt}]
  * @param {Array} liveArtists  - artist objects with current monthlyListeners

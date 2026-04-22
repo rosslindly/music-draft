@@ -8,7 +8,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] localstorage-export.md        Export/import JSON backup as data safety net
 - [x] monthly-listeners-model.md    Swap popularity (0–100) for monthlyListeners throughout data model
 - [x] listener-baseline-entry.md    Manual entry of Week 1 listener counts after drafting
-- [ ] weekly-update-prompt.md       Friday prompt to enter updated listener counts each week
+- [x] weekly-update-prompt.md       Friday prompt to enter updated listener counts each week
 - [ ] weekly-score-calculation.md   Score by listener growth; supersedes scoring-refactor.md
 
 ## Pre-Multiplayer Alpha (do before inviting friends)
