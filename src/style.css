@@ -434,6 +434,12 @@ a:hover { text-decoration: underline; }
   border-color: var(--accent);
 }
 
+.create-league-input--fixed {
+  color: var(--text-muted);
+  cursor: default;
+  user-select: none;
+}
+
 .create-league-field-hint {
   font-size: 0.78rem;
   color: var(--text-muted);

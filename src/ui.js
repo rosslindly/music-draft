@@ -236,16 +236,16 @@ export function renderCreateLeague(onContinue, onBack) {
             />
           </div>
           <div class="create-league-field create-league-field--half">
-            <label class="create-league-label" for="league-max-participants-input">Max Players</label>
-            <input
-              type="number"
-              id="league-max-participants-input"
-              class="create-league-input"
-              value="8"
-              min="2"
-              max="50"
-            />
+            <!-- POST-ALPHA: replace with editable select (4/6/8/10/12/16 weeks) -->
+            <label class="create-league-label">Duration</label>
+            <div class="create-league-input create-league-input--fixed">8 weeks</div>
           </div>
+        </div>
+
+        <!-- POST-ALPHA: replace with editable number input (min 2, max 50) -->
+        <div class="create-league-field">
+          <label class="create-league-label">Max Players</label>
+          <div class="create-league-input create-league-input--fixed">8</div>
         </div>
 
         <button class="btn-primary create-league-btn" id="create-league-btn" disabled>Create League →</button>
@@ -266,14 +266,15 @@ export function renderCreateLeague(onContinue, onBack) {
     const name = nameInput.value.trim();
     if (!name) return;
     const scheduledStartDate = document.getElementById('league-start-date-input').value || null;
-    const maxParticipantsRaw = document.getElementById('league-max-participants-input').value;
-    const maxParticipants = maxParticipantsRaw ? parseInt(maxParticipantsRaw, 10) : null;
+    const durationWeeks = 8; // POST-ALPHA: read from duration picker
+    const maxParticipants = 8; // POST-ALPHA: read from max players input
     onContinue({
       name,
       inviteCode,
       createdAt: new Date().toISOString(),
       startDate: null,
       scheduledStartDate,
+      durationWeeks,
       maxParticipants,
     });
   });
