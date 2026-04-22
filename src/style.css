@@ -1,5 +1,6 @@
 /* === Reset & Base === */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+button, input, select, textarea { font-family: inherit; }
 
 :root {
   --accent: #7c3aed;
@@ -28,7 +29,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  font-family: 'Courier New', Courier, monospace;
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
