@@ -1317,6 +1317,7 @@ img.artist-avatar {
   font-weight: 700;
   color: var(--text);
   flex-shrink: 0;
+  margin-left: auto;
   text-align: right;
   min-width: 48px;
 }

@@ -725,11 +725,6 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
                 <span class="standings-rank">${leagueStarted ? i + 1 : '—'}</span>
                 <span class="standings-name">${escapeHtml(entry.handle)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
-                <div class="standings-picks">
-                  ${entry.picks.map(p => `
-                    <div class="standings-avatar" style="background:${artistColor(p.id)}" title="${escapeHtml(p.name)}">${escapeHtml(initials(p.name))}</div>
-                  `).join('')}
-                </div>
                 <span class="standings-pts">${entry.totalPoints} <span class="standings-pts-label">pts</span></span>
               </li>
             `).join('')}
