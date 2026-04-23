@@ -237,6 +237,7 @@ async function showDraft(preSelected = []) {
     renderLoading('Fetching live listener counts…');
     try {
       const counts = await fetchListenerCounts(topArtists);
+      if (window.location.hash !== ROUTES.DRAFT) return;
       topArtists = topArtists.map(a => ({
         ...a,
         monthlyListeners: counts[a.id] ?? a.monthlyListeners,
@@ -290,6 +291,7 @@ async function showWeeklyUpdate(lineup, overrideWeek) {
     } catch (err) {
       console.warn('Apify fetch failed, proceeding without prefill:', err);
     }
+    if (window.location.hash !== ROUTES.WEEKLY_UPDATE) return;
   }
 
   renderWeeklyUpdate(lineup, weekNumber, prefilled, (entries) => {
