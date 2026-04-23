@@ -510,11 +510,13 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
               ${artistAvatar(a.name, a.id, a.imageUrl)}
               <div class="artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
+                ${a.monthlyListeners != null ? `<div class="artist-listeners">${fmtListeners(a.monthlyListeners)} monthly listeners</div>` : ''}
               </div>
               <div class="artist-select">
                 <input type="checkbox"
                   value="${escapeHtml(a.id)}"
                   data-name="${escapeHtml(a.name)}"
+                  data-listeners="${a.monthlyListeners ?? ''}"
                   ${preSelectedIds.has(a.id) ? 'checked' : ''} />
               </div>
             </li>
@@ -561,7 +563,8 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
       .filter(c => c.classList.contains('selected'))
       .map(c => {
         const cb = c.querySelector('input[type="checkbox"]');
-        return { id: cb.value, name: cb.dataset.name, monthlyListeners: null };
+        const listeners = cb.dataset.listeners ? Number(cb.dataset.listeners) : null;
+        return { id: cb.value, name: cb.dataset.name, monthlyListeners: listeners };
       });
     onLockIn(selected);
   });

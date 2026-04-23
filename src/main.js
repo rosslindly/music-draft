@@ -1,6 +1,7 @@
 // main.js — Entry point
 import { login, handleCallback, logout } from './session.js';
 import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
+import { hasApifyToken, fetchListenerCounts } from './apify.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
 import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
@@ -218,7 +219,22 @@ async function showDraft(preSelected = []) {
   const intent = loadIntent();
   const backRoute = intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE;
   renderLoading('Loading artists…');
-  const topArtists = await getTopArtists();
+  let topArtists = await getTopArtists();
+
+  if (hasApifyToken() && topArtists.some(a => a.monthlyListeners == null)) {
+    renderLoading('Fetching live listener counts…');
+    try {
+      const counts = await fetchListenerCounts(topArtists);
+      topArtists = topArtists.map(a => ({
+        ...a,
+        monthlyListeners: counts[a.id] ?? a.monthlyListeners,
+      }));
+      localStorage.setItem('md_top_artists', JSON.stringify(topArtists));
+    } catch (err) {
+      console.warn('Apify enrichment failed, proceeding without listener counts:', err);
+    }
+  }
+
   renderDraft(
     topArtists,
     (selected) => {
@@ -236,7 +252,10 @@ async function showDraft(preSelected = []) {
 
 function showBaselineEntry(lineup) {
   const week1 = getSnapshots().find(s => s.week === 1);
-  const existing = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
+  const saved = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
+  const existing = Object.fromEntries(
+    lineup.map(a => [a.id, saved[a.id] ?? a.monthlyListeners ?? undefined])
+  );
   renderBaselineEntry(lineup, existing, (entries) => {
     saveSnapshot(1, entries);
     navigate(ROUTES.LEAGUE);
