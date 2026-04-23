@@ -40,6 +40,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [x] scoring-refactor.md      Proportional scoring based on monthly listeners (Alpha)
 - [ ] spotify-top-artists-pagination.md  Paginate /me/top/artists beyond the 30-artist limit (user has 41; fetch all pages)
 - [ ] apify-error-state.md     Show non-blocking notice on Draft screen when Apify listener count fetch fails (token expired, etc.)
+- [ ] apple-music-api-research.md  Research Apple Music API as alternative to Spotify for sourcing user listening activity
 - [ ] streak-bonuses.md        Streak bonus points for consecutive weekly listener growth
 - [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings

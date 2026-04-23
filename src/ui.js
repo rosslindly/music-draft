@@ -449,7 +449,7 @@ export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
 
 // --- Spotify Connect View ---
 
-export function renderSpotifyConnect(onConnect, onSkip, onBack) {
+export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = false) {
   app.innerHTML = `
     <div class="view view-onboarding">
       <div class="onboarding-card">
@@ -479,17 +479,25 @@ export function renderSpotifyConnect(onConnect, onSkip, onBack) {
   document.getElementById('spotify-back-btn').addEventListener('click', onBack);
   document.getElementById('spotify-skip-btn').addEventListener('click', onSkip);
 
-  document.getElementById('spotify-connect-btn').addEventListener('click', () => {
-    const btn = document.getElementById('spotify-connect-btn');
-    btn.classList.add('spotify-connected');
-    btn.innerHTML = `
+  const connectBtn = document.getElementById('spotify-connect-btn');
+
+  function showConnectedState(cb) {
+    connectBtn.classList.add('spotify-connected');
+    connectBtn.innerHTML = `
       <svg viewBox="0 0 20 20" fill="currentColor" width="18" height="18" style="flex-shrink:0">
         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
       </svg>
       Spotify Connected
     `;
-    setTimeout(() => onConnect(), 600);
-  });
+    setTimeout(cb, 900);
+  }
+
+  if (showConnected) {
+    showConnectedState(onConnect);
+    return;
+  }
+
+  connectBtn.addEventListener('click', () => onConnect());
 }
 
 // --- Draft View ---

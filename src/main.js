@@ -381,7 +381,12 @@ if (oauthCode) {
       saveProfile({ ...loadProfile(), spotifyConnected: true });
       history.replaceState({}, '', '/');
       isInitialLoad = false;
-      navigate(ROUTES.DRAFT);
+      renderSpotifyConnect(
+        () => navigate(ROUTES.DRAFT),
+        () => navigate(ROUTES.DRAFT),
+        () => navigate(ROUTES.DRAFT),
+        true,
+      );
     })
     .catch((err) => {
       console.error('Spotify OAuth callback failed:', err);
