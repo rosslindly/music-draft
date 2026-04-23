@@ -16,6 +16,14 @@ function initials(name) {
   return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 }
 
+function artistAvatar(name, id, imageUrl, extraClass = '') {
+  const cls = `artist-avatar${extraClass ? ' ' + extraClass : ''}`;
+  if (imageUrl) {
+    return `<img class="${cls}" src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" loading="lazy">`;
+  }
+  return `<div class="${cls}" style="background:${artistColor(id)}">${escapeHtml(initials(name))}</div>`;
+}
+
 const AVATAR_COLORS = ['#7c3aed', '#3b82f6', '#f59e0b', '#10b981', '#ef4444', '#ec4899', '#8b5cf6', '#0891b2'];
 
 function artistColor(id) {
@@ -335,7 +343,7 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
         <ul class="baseline-list" id="baseline-list">
           ${lineup.map(a => `
             <li class="baseline-row" data-id="${escapeHtml(a.id)}">
-              <div class="artist-avatar baseline-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
+              ${artistAvatar(a.name, a.id, a.imageUrl, 'baseline-avatar')}
               <div class="baseline-artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
               </div>
@@ -394,7 +402,7 @@ export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
         <ul class="baseline-list" id="weekly-update-list">
           ${lineup.map(a => `
             <li class="baseline-row" data-id="${escapeHtml(a.id)}">
-              <div class="artist-avatar baseline-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
+              ${artistAvatar(a.name, a.id, a.imageUrl, 'baseline-avatar')}
               <div class="baseline-artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
               </div>
@@ -499,7 +507,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
           ${artists.map((a, i) => `
             <li class="artist-card${preSelectedIds.has(a.id) ? ' selected' : ''}" data-id="${escapeHtml(a.id)}">
               <div class="artist-rank">#${i + 1}</div>
-              <div class="artist-avatar" style="background:${artistColor(a.id)}">${escapeHtml(initials(a.name))}</div>
+              ${artistAvatar(a.name, a.id, a.imageUrl)}
               <div class="artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
               </div>
@@ -672,7 +680,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               return `
                 <li class="artist-card lh-artist-card">
                   <div class="lh-artist-row">
-                    <div class="artist-avatar" style="background:${artistColor(r.id)}">${escapeHtml(initials(r.name))}</div>
+                    ${artistAvatar(r.name, r.id, r.imageUrl)}
                     <div class="artist-info">
                       <div class="artist-name">${escapeHtml(r.name)}</div>
                       ${leagueStarted && r.change != null ? (() => {

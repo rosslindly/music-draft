@@ -19,10 +19,11 @@ export function clearLeague() {
 
 export function saveLineup(artists) {
   const savedAt = new Date().toISOString();
-  const lineup = artists.map(({ id, name, monthlyListeners }) => ({
+  const lineup = artists.map(({ id, name, monthlyListeners, imageUrl }) => ({
     id,
     name,
     monthlyListeners: typeof monthlyListeners === 'number' && !isNaN(monthlyListeners) ? monthlyListeners : null,
+    imageUrl: imageUrl ?? null,
     savedAt,
   }));
   console.log('[scoring] saving lineup:', lineup.map(a => `${a.name}: ${a.monthlyListeners}`));

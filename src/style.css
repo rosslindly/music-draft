@@ -877,6 +877,10 @@ a:hover { text-decoration: underline; }
   flex-shrink: 0;
 }
 
+img.artist-avatar {
+  object-fit: cover;
+}
+
 .artist-info { flex: 1; min-width: 0; }
 
 .artist-top-row {

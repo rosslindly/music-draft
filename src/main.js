@@ -4,6 +4,19 @@ import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
 import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+// Enrich a lineup array with imageUrl from the cached top artists, so screens
+// that load from localStorage still get images even if the lineup was saved
+// before imageUrl was persisted.
+function withImages(lineup) {
+  if (!lineup) return lineup;
+  const cached = localStorage.getItem('md_top_artists');
+  if (!cached) return lineup;
+  const imageById = Object.fromEntries(JSON.parse(cached).map(a => [a.id, a.imageUrl ?? null]));
+  return lineup.map(a => ({ ...a, imageUrl: a.imageUrl ?? imageById[a.id] ?? null }));
+}
+
 // ── Persisted session state ───────────────────────────────────────────────────
 
 const PROFILE_KEY = 'md_profile';
@@ -83,9 +96,9 @@ async function renderRoute(route, state = {}) {
     case ROUTES.SELECT_LEAGUE:   return showSelectLeague();
     case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect();
     case ROUTES.DRAFT:           return showDraft(state.preSelected ?? []);
-    case ROUTES.BASELINE:      return showBaselineEntry(getLineup());
-    case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(getLineup(), state.weekNumber);
-    case ROUTES.LEAGUE:        return showScore(getLineup());
+    case ROUTES.BASELINE:      return showBaselineEntry(withImages(getLineup()));
+    case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(withImages(getLineup()), state.weekNumber);
+    case ROUTES.LEAGUE:        return showScore(withImages(getLineup()));
     default:                   return autoNavigate();
   }
 }
@@ -294,7 +307,10 @@ async function showScore(lineup) {
   if (leagueStarted) {
     const { results: seasonResults } = scoreSeason(snapshots);
     const seasonById = Object.fromEntries(seasonResults.map(r => [r.id, r]));
-    results = lineup.map(a => seasonById[a.id] ?? { id: a.id, name: a.name, points: 0, listenersThen: null, listenersNow: null, change: null });
+    results = lineup.map(a => {
+      const s = seasonById[a.id];
+      return s ? { ...s, imageUrl: a.imageUrl ?? null } : { id: a.id, name: a.name, points: 0, listenersThen: null, listenersNow: null, change: null, imageUrl: a.imageUrl ?? null };
+    });
     totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(1));
     memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
   } else {
@@ -302,7 +318,7 @@ async function showScore(lineup) {
     const week1ById = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
     results = lineup.map(a => {
       const baseline = week1ById[a.id] ?? a.monthlyListeners;
-      return { id: a.id, name: a.name, points: 0, change: null, listenersThen: baseline, listenersNow: baseline };
+      return { id: a.id, name: a.name, points: 0, change: null, listenersThen: baseline, listenersNow: baseline, imageUrl: a.imageUrl ?? null };
     });
     totalPoints = 0;
     memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
