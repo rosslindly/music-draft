@@ -31,6 +31,24 @@ function artistColor(id) {
   return AVATAR_COLORS[sum % AVATAR_COLORS.length];
 }
 
+function userAvatarHtml(profile, cls = 'user-avatar') {
+  if (profile?.photo) {
+    return `<img class="${cls}" src="${escapeHtml(profile.photo)}" alt="Profile">`;
+  }
+  const letter = (profile?.handle ?? '@?').replace('@', '')[0]?.toUpperCase() ?? '?';
+  return `<div class="${cls} ${cls}--initial">${letter}</div>`;
+}
+
+function profileChipHtml(profile) {
+  const handle = profile?.handle ?? '@you';
+  return `
+    <button class="profile-chip" id="profile-chip-btn">
+      ${userAvatarHtml(profile)}
+      <span class="profile-chip-handle">${escapeHtml(handle)}</span>
+    </button>
+  `;
+}
+
 
 function fmtListeners(n) {
   if (n == null || isNaN(n)) return null;
@@ -505,13 +523,16 @@ export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = 
 
 // --- Draft View ---
 
-export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
+export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile = null, onProfile = null) {
   const preSelectedIds = new Set(preSelected.map(a => a.id));
   const isEditing = preSelected.length > 0;
   app.innerHTML = `
     <div class="view view-draft">
+      <div class="draft-topbar">
+        <button class="btn-back draft-topbar-back" id="draft-back-btn">← Back</button>
+        ${profile ? profileChipHtml(profile) : ''}
+      </div>
       <div class="draft-container">
-        <button class="btn-back" id="draft-back-btn">← Back</button>
         <h1>${isEditing ? 'Edit Your Lineup' : 'Draft Your Lineup'}</h1>
         <p class="tagline">Draft up to 5 artists from your recent listening history.</p>
         <p class="draft-count" id="draft-count">0 / 5 selected</p>
@@ -569,6 +590,9 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
   });
 
   document.getElementById('draft-back-btn').addEventListener('click', onBack);
+  if (onProfile) {
+    document.getElementById('profile-chip-btn')?.addEventListener('click', onProfile);
+  }
 
   lockBtn.addEventListener('click', () => {
     const selected = [...cards]
@@ -614,7 +638,7 @@ function buildArtistStatsRows(artistId, snapshots) {
   return rows.join('');
 }
 
-export function renderScore({ results, totalPoints, standings, league, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft }) {
+export function renderScore({ results, totalPoints, standings, league, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile }) {
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `
@@ -629,8 +653,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
           Music Draft
         </div>
         <div class="header-user">
-          <button class="btn-logout" id="new-draft-btn">Start Over</button>
-          <button class="btn-logout" id="logout-btn">Sign Out</button>
+          ${profile ? profileChipHtml(profile) : ''}
         </div>
       </header>
 
@@ -745,8 +768,9 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
     </div>
   `;
 
-  document.getElementById('new-draft-btn').addEventListener('click', onNewDraft);
-  document.getElementById('logout-btn').addEventListener('click', onLogout);
+  if (onProfile) {
+    document.getElementById('profile-chip-btn')?.addEventListener('click', onProfile);
+  }
   if (weeklyUpdate) {
     document.getElementById('update-now-btn').addEventListener('click', weeklyUpdate.onUpdate);
     document.getElementById('update-dismiss-btn').addEventListener('click', weeklyUpdate.onDismiss);
@@ -777,6 +801,48 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
         setTimeout(() => { copyBtn.textContent = 'Copy Code'; }, 2000);
       });
     });
+  }
+}
+
+// --- Settings View ---
+
+export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpotifyConnect }) {
+  const spotifyConnected = profile?.spotifyConnected === true;
+  app.innerHTML = `
+    <div class="view view-settings">
+      <div class="settings-card">
+        <button class="btn-back" id="settings-back-btn">← Back</button>
+
+        <div class="settings-profile-block">
+          ${userAvatarHtml(profile, 'settings-avatar')}
+          <div class="settings-handle">${escapeHtml(profile?.handle ?? '@you')}</div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Spotify</div>
+          <div class="settings-row">
+            <span class="settings-row-label">Connection</span>
+            ${spotifyConnected
+              ? `<span class="settings-row-value settings-spotify-status--connected">Connected</span>`
+              : `<button class="settings-row-action" id="settings-spotify-btn">Connect</button>`
+            }
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Account</div>
+          <button class="settings-danger-btn" id="settings-signout-btn">Sign Out</button>
+          <button class="settings-danger-btn settings-danger-btn--destructive" id="settings-startover-btn">Start Over (erase all data)</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('settings-back-btn').addEventListener('click', onBack);
+  document.getElementById('settings-signout-btn').addEventListener('click', onSignOut);
+  document.getElementById('settings-startover-btn').addEventListener('click', onStartOver);
+  if (!spotifyConnected) {
+    document.getElementById('settings-spotify-btn')?.addEventListener('click', onSpotifyConnect);
   }
 }
 

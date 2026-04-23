@@ -3,7 +3,7 @@ import { login, handleCallback, logout } from './session.js';
 import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLoading } from './ui.js';
+import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderSettings, renderLoading } from './ui.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +61,7 @@ const ROUTES = {
   BASELINE:        '#set-week-1-baseline',
   WEEKLY_UPDATE:   '#weekly-update',
   LEAGUE:          '#league/1',
+  SETTINGS:        '#settings',
 };
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
@@ -100,6 +101,7 @@ async function renderRoute(route, state = {}) {
     case ROUTES.BASELINE:      return showBaselineEntry(withImages(getLineup()));
     case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(withImages(getLineup()), state.weekNumber);
     case ROUTES.LEAGUE:        return showScore(withImages(getLineup()));
+    case ROUTES.SETTINGS:      return showSettings();
     default:                   return autoNavigate();
   }
 }
@@ -215,6 +217,16 @@ function showSpotifyConnect() {
   );
 }
 
+function showSettings() {
+  const profile = loadProfile();
+  renderSettings(profile, {
+    onBack: () => history.back(),
+    onSignOut() { logout(); clearAll(); navigate(ROUTES.WELCOME); },
+    onStartOver() { clearAll(); navigate(ROUTES.WELCOME); },
+    onSpotifyConnect() { navigate(ROUTES.SPOTIFY_CONNECT); },
+  });
+}
+
 async function showDraft(preSelected = []) {
   const intent = loadIntent();
   const backRoute = intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE;
@@ -235,6 +247,7 @@ async function showDraft(preSelected = []) {
     }
   }
 
+  const profile = loadProfile();
   renderDraft(
     topArtists,
     (selected) => {
@@ -247,6 +260,8 @@ async function showDraft(preSelected = []) {
     },
     () => { navigate(backRoute); },
     preSelected,
+    profile,
+    () => { navigate(ROUTES.SETTINGS); },
   );
 }
 
@@ -323,6 +338,8 @@ async function showScore(lineup) {
       league: displayLeague,
       leagueStarted: false,
       weeklyUpdate: null,
+      profile,
+      onProfile() { navigate(ROUTES.SETTINGS); },
       onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
       onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
       onEditLineup() {},
@@ -372,6 +389,8 @@ async function showScore(lineup) {
     onManualWeeklyUpdate: canManuallyUpdate
       ? () => { navigate(ROUTES.WEEKLY_UPDATE, { weekNumber: nextWeekNumber }); }
       : null,
+    profile,
+    onProfile() { navigate(ROUTES.SETTINGS); },
     onNewDraft()   { clearAll(); navigate(ROUTES.WELCOME); },
     onLogout()     { logout(); clearAll(); navigate(ROUTES.WELCOME); },
     onEditLineup() { navigate(ROUTES.DRAFT, { preSelected: lineup }); },

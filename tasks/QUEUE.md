@@ -32,8 +32,8 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] draft-history.md         Persist and display past draft results
 - [x] remove-league-scoring.md Remove the "Scoring" section from the league invite screen
 - [x] url-routing.md               Hash-based routing so Back button works and screens are deep-linkable
-- [ ] avatar-placeholder-images.md Replace initial-letter avatars with placeholder people images throughout
-- [ ] profile-header-settings.md   Show profile avatar and name in top right corner of main screens; build out a Settings screen
+- [x] avatar-placeholder-images.md Replace initial-letter avatars with placeholder people images throughout
+- [x] profile-header-settings.md   Show profile avatar and name in top right corner of main screens; build out a Settings screen
 - [ ] draft-already-taken.md   Show some artists on the Draft screen as already claimed by other players and un-draftable
 - [ ] league-start-date.md     Add a Start Date field to each league using placeholder data (superseded by league-create)
 - [x] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
