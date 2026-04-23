@@ -263,10 +263,21 @@ function showBaselineEntry(lineup) {
 }
 
 // overrideWeek lets the manual-update path bypass the date-derived week number
-function showWeeklyUpdate(lineup, overrideWeek) {
+async function showWeeklyUpdate(lineup, overrideWeek) {
   const league = getLeague();
   const weekNumber = overrideWeek ?? getCurrentWeekNumber(league?.startDate);
-  renderWeeklyUpdate(lineup, weekNumber, (entries) => {
+
+  let prefilled = {};
+  if (hasApifyToken()) {
+    renderLoading('Fetching live listener counts…');
+    try {
+      prefilled = await fetchListenerCounts(lineup);
+    } catch (err) {
+      console.warn('Apify fetch failed, proceeding without prefill:', err);
+    }
+  }
+
+  renderWeeklyUpdate(lineup, weekNumber, prefilled, (entries) => {
     saveSnapshot(weekNumber, entries);
     navigate(ROUTES.LEAGUE);
   });

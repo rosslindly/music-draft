@@ -391,13 +391,14 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
 
 // --- Weekly Update Entry View ---
 
-export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
+export function renderWeeklyUpdate(lineup, weekNumber, prefilled = {}, onSubmit) {
+  const hasPrefill = Object.keys(prefilled).length > 0;
   app.innerHTML = `
     <div class="view view-baseline">
       <div class="baseline-card">
         <div class="baseline-header">
           <h1 class="baseline-title">Week ${weekNumber} Listener Update</h1>
-          <p class="baseline-sub">Look up each artist on Spotify and enter their current monthly listeners. This week's counts will be compared against last week's snapshot to calculate your score.</p>
+          <p class="baseline-sub">${hasPrefill ? 'Listener counts have been prefilled from Spotify — review and adjust if needed.' : 'Look up each artist on Spotify and enter their current monthly listeners.'} This week's counts will be compared against last week's snapshot to calculate your score.</p>
         </div>
 
         <ul class="baseline-list" id="weekly-update-list">
@@ -414,6 +415,7 @@ export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
                 placeholder="e.g. 4200000"
                 min="1"
                 step="1"
+                ${prefilled[a.id] ? `value="${prefilled[a.id]}"` : ''}
               />
             </li>
           `).join('')}
@@ -436,6 +438,7 @@ export function renderWeeklyUpdate(lineup, weekNumber, onSubmit) {
   }
 
   inputs.forEach(inp => inp.addEventListener('input', validate));
+  validate();
 
   saveBtn.addEventListener('click', () => {
     const entries = lineup.map((a, i) => ({
@@ -593,9 +596,11 @@ function buildArtistStatsRows(artistId, snapshots) {
     let changeHtml = '';
     if (w > 1 && listeners != null && prevListeners != null) {
       const delta = listeners - prevListeners;
-      const sign = delta > 0 ? '+' : '';
-      const cls = delta > 0 ? 'change-up' : delta < 0 ? 'change-down' : 'change-flat';
-      changeHtml = `<span class="artist-stat-change ${cls}">${sign}${fmtListeners(Math.abs(delta))}</span>`;
+      if (delta !== 0) {
+        const sign = delta > 0 ? '+' : '-';
+        const cls = delta > 0 ? 'change-up' : 'change-down';
+        changeHtml = `<span class="artist-stat-change ${cls}">${sign}${fmtListeners(Math.abs(delta))}</span>`;
+      }
     }
     rows.push(`
       <div class="artist-stat-row">
