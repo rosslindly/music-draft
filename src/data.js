@@ -134,11 +134,10 @@ export async function getTopArtists() {
     const artists = items.map(a => ({
       id: a.id,
       name: a.name,
-      genres: a.genres,
-      // Spotify doesn't expose monthlyListeners via the API; use followers.total
-      // as a proxy for display. Real listener counts are entered manually at baseline.
-      monthlyListeners: a.followers?.total ?? 0,
-      imageUrl: a.images?.[0]?.url ?? null,
+      // Spotify deprecated followers, genres, and popularity from this endpoint.
+      // Real listener counts are entered manually at baseline entry.
+      monthlyListeners: null,
+      imageUrl: a.images?.at(-1)?.url ?? null,
     }));
 
     localStorage.setItem(TOP_ARTISTS_KEY, JSON.stringify(artists));

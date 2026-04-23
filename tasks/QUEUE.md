@@ -38,6 +38,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] league-start-date.md     Add a Start Date field to each league using placeholder data (superseded by league-create)
 - [x] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
 - [x] scoring-refactor.md      Proportional scoring based on monthly listeners (Alpha)
+- [ ] spotify-top-artists-pagination.md  Paginate /me/top/artists beyond the 30-artist limit (user has 41; fetch all pages)
 - [ ] streak-bonuses.md        Streak bonus points for consecutive weekly listener growth
 - [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings

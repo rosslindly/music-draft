@@ -515,7 +515,6 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
                 <input type="checkbox"
                   value="${escapeHtml(a.id)}"
                   data-name="${escapeHtml(a.name)}"
-                  data-monthly-listeners="${a.monthlyListeners}"
                   ${preSelectedIds.has(a.id) ? 'checked' : ''} />
               </div>
             </li>
@@ -562,7 +561,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = []) {
       .filter(c => c.classList.contains('selected'))
       .map(c => {
         const cb = c.querySelector('input[type="checkbox"]');
-        return { id: cb.value, name: cb.dataset.name, monthlyListeners: parseInt(cb.dataset.monthlyListeners, 10) };
+        return { id: cb.value, name: cb.dataset.name, monthlyListeners: null };
       });
     onLockIn(selected);
   });
