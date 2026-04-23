@@ -377,6 +377,7 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
   }
 
   inputs.forEach(inp => inp.addEventListener('input', validate));
+  validate();
 
   saveBtn.addEventListener('click', () => {
     const entries = lineup.map((a, i) => ({
