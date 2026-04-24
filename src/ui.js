@@ -751,10 +751,6 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
           ` : ''}
         </section>
       </div>
-
-      <footer class="results-footer">
-        Scores update weekly · 1 pt per 1% listener growth · +1 if unchanged · 0 if they dropped
-      </footer>
     </div>
   `;
 
