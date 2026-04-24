@@ -224,6 +224,10 @@ function showSettings() {
     onSignOut() { logout(); clearAll(); navigate(ROUTES.WELCOME); },
     onStartOver() { clearAll(); navigate(ROUTES.WELCOME); },
     onSpotifyConnect() { navigate(ROUTES.SPOTIFY_CONNECT); },
+    onSaveProfile({ handle }) {
+      saveProfile({ ...loadProfile(), handle });
+      showSettings();
+    },
   });
 }
 

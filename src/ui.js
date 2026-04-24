@@ -792,8 +792,9 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
 
 // --- Settings View ---
 
-export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpotifyConnect }) {
+export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpotifyConnect, onSaveProfile }) {
   const spotifyConnected = profile?.spotifyConnected === true;
+  const currentHandle = (profile?.handle ?? '@').replace('@', '');
   app.innerHTML = `
     <div class="view view-settings">
       <div class="settings-card">
@@ -802,6 +803,26 @@ export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpot
         <div class="settings-profile-block">
           ${userAvatarHtml(profile, 'settings-avatar')}
           <div class="settings-handle">${escapeHtml(profile?.handle ?? '@you')}</div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Profile</div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="settings-handle-input">Handle</label>
+            <div class="settings-handle-wrap">
+              <span class="settings-at">@</span>
+              <input
+                type="text"
+                id="settings-handle-input"
+                class="settings-handle-input-field"
+                value="${escapeHtml(currentHandle)}"
+                maxlength="24"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+          <button class="settings-save-btn" id="settings-save-btn" disabled>Save changes</button>
         </div>
 
         <div class="settings-section">
@@ -830,6 +851,20 @@ export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpot
   if (!spotifyConnected) {
     document.getElementById('settings-spotify-btn')?.addEventListener('click', onSpotifyConnect);
   }
+
+  const handleInput = document.getElementById('settings-handle-input');
+  const saveBtn = document.getElementById('settings-save-btn');
+
+  handleInput.addEventListener('input', () => {
+    handleInput.value = handleInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+    saveBtn.disabled = handleInput.value.trim() === currentHandle;
+  });
+
+  saveBtn.addEventListener('click', () => {
+    const handle = handleInput.value.trim();
+    if (handle.length < 2) return;
+    onSaveProfile({ handle: `@${handle}` });
+  });
 }
 
 // --- Loading View ---

@@ -1611,6 +1611,74 @@ img.settings-avatar { object-fit: cover; }
 .settings-danger-btn--destructive { border-color: rgba(239, 68, 68, 0.3); }
 .settings-danger-btn--destructive:hover { border-color: #ef4444; color: #ef4444; }
 
+.settings-field {
+  margin-bottom: 12px;
+}
+
+.settings-field-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+
+.settings-handle-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+
+.settings-handle-wrap:focus-within { border-color: var(--accent); }
+
+.settings-at {
+  padding: 0 10px 0 14px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.settings-handle-input-field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 11px 14px 11px 0;
+  min-width: 0;
+  font-family: inherit;
+}
+
+.settings-handle-input-field::placeholder { color: var(--text-muted); font-weight: 400; }
+
+.settings-save-btn {
+  display: block;
+  width: 100%;
+  background: var(--accent);
+  border: none;
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-top: 4px;
+  transition: background 0.15s, opacity 0.15s;
+  font-family: inherit;
+}
+
+.settings-save-btn:hover:not(:disabled) { background: var(--accent-dark); }
+.settings-save-btn:disabled { opacity: 0.35; cursor: default; }
+
 /* === Responsive === */
 @media (max-width: 600px) {
   .lh-banner { padding: 16px; }
