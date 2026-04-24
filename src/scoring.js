@@ -74,8 +74,7 @@ export function hasSubmittedThisWeek(startDate) {
 
 function calcPoints(change, baseline) {
   if (!baseline || change == null) return 0;
-  if (change > 0) return Math.max(0.1, parseFloat(((change / baseline) * 100).toFixed(1)));
-  if (change === 0) return 1;
+  if (change > 0) return Math.max(0.01, parseFloat(((change / baseline) * 100).toFixed(2)));
   return 0;
 }
 
@@ -97,7 +96,7 @@ export function scoreWeek(currentSnap, previousSnap) {
     totalPoints += points;
     return { id: curr.id, name: curr.name, listenersThen, listenersNow, change, points };
   });
-  return { results, totalPoints: parseFloat(totalPoints.toFixed(1)), week: currentSnap.week };
+  return { results, totalPoints: parseFloat(totalPoints.toFixed(2)), week: currentSnap.week };
 }
 
 /**
@@ -128,13 +127,13 @@ export function scoreSeason(snapshots) {
     return {
       id: t.id,
       name: t.name,
-      points: parseFloat(t.points.toFixed(1)),
+      points: parseFloat(t.points.toFixed(2)),
       listenersThen: latest.listenersThen ?? null,
       listenersNow: latest.listenersNow ?? null,
       change: latest.change ?? null,
     };
   });
 
-  const totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(1));
+  const totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(2));
   return { results, totalPoints };
 }

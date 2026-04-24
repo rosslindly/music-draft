@@ -617,20 +617,10 @@ function buildArtistStatsRows(artistId, snapshots) {
     const snap = snapshots.find(s => s.week === w);
     const artist = snap?.artists.find(a => a.id === artistId);
     const listeners = artist?.monthlyListeners ?? null;
-    let changeHtml = '';
-    if (w > 1 && listeners != null && prevListeners != null) {
-      const delta = listeners - prevListeners;
-      if (delta !== 0) {
-        const sign = delta > 0 ? '+' : '-';
-        const cls = delta > 0 ? 'change-up' : 'change-down';
-        changeHtml = `<span class="artist-stat-change ${cls}">${sign}${fmtListeners(Math.abs(delta))}</span>`;
-      }
-    }
     rows.push(`
       <div class="artist-stat-row">
         <span class="artist-stat-week">Wk ${w}</span>
         <span class="artist-stat-listeners">${listeners != null ? fmtListeners(listeners) : '—'}</span>
-        ${changeHtml}
       </div>
     `);
     if (listeners != null) prevListeners = listeners;
@@ -713,7 +703,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
           ` : `
           <ul class="artist-list">
             ${results.map(r => {
-              const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 1 ? 'lh-pts-up' : r.points > 0 ? 'lh-pts-flat' : 'lh-pts-zero';
+              const ptsCls = !leagueStarted ? 'lh-pts-flat' : r.points > 0 ? 'lh-pts-up' : 'lh-pts-zero';
               const ptsLabel = !leagueStarted ? '—' : r.points > 0 ? `+${r.points}` : '0';
               const statsRows = buildArtistStatsRows(r.id, snapshots);
               return `
@@ -724,9 +714,9 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
                       <div class="artist-name">${escapeHtml(r.name)}</div>
                       ${leagueStarted && r.change != null ? (() => {
                         const deltaAbs = fmtListeners(Math.abs(r.change));
-                        const deltaStr = r.change === 0 ? '0' : `${r.change > 0 ? '+' : '-'}${deltaAbs}`;
+                        const deltaStr = r.change === 0 ? '±0' : `${r.change > 0 ? '+' : '-'}${deltaAbs}`;
                         const deltaCls = r.change > 0 ? 'change-up' : r.change < 0 ? 'change-down' : 'change-flat';
-                        return `<div class="lh-artist-listeners">${fmtListeners(r.listenersThen) ?? '—'} → ${fmtListeners(r.listenersNow) ?? '—'} <span class="${deltaCls}">(${deltaStr})</span></div>`;
+                        return `<div class="lh-artist-listeners"><span class="${deltaCls}">${deltaStr}</span> monthly listeners</div>`;
                       })() : ''}
                       ${statsRows ? `<button class="btn-stats-toggle" data-id="${escapeHtml(r.id)}">Stats ▾</button>` : ''}
                     </div>

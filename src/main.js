@@ -360,7 +360,7 @@ async function showScore(lineup) {
       const s = seasonById[a.id];
       return s ? { ...s, imageUrl: a.imageUrl ?? null } : { id: a.id, name: a.name, points: 0, listenersThen: null, listenersNow: null, change: null, imageUrl: a.imageUrl ?? null };
     });
-    totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(1));
+    totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(2));
     memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
   } else {
     const week1 = snapshots.find(s => s.week === 1);
