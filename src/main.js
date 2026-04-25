@@ -226,6 +226,8 @@ function showSettings() {
     onSpotifyConnect() { navigate(ROUTES.SPOTIFY_CONNECT); },
     onSaveProfile({ handle }) {
       saveProfile({ ...loadProfile(), handle });
+      const league = getLeague();
+      if (league) saveLeague({ ...league, admin: handle });
       showSettings();
     },
   });
