@@ -727,7 +727,6 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               `;
             }).join('')}
           </ul>
-          ${!leagueStarted && results.length > 0 ? `<p class="lh-scores-pending-hint">Scores update after your first weekly check-in</p>` : ''}
           `}
         </section>
 
