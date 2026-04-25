@@ -329,10 +329,17 @@ async function showScore(lineup) {
       }
     : null;
 
+  const scheduledStart = league?.scheduledStartDate ? new Date(league.scheduledStartDate) : null;
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const daysUntilStart = scheduledStart
+    ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   const displayLeague = {
     name: league?.name ?? 'My League',
     admin: league?.admin ?? profile?.handle ?? '@you',
-    daysUntilStart: 0,
+    daysUntilStart,
     teamCount: league?.teamCount ?? 1,
     maxTeams: league?.maxTeams ?? 10,
     inviteCode: league?.inviteCode ?? null,
