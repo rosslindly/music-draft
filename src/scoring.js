@@ -74,7 +74,7 @@ export function hasSubmittedThisWeek(startDate) {
 
 function calcPoints(change, baseline) {
   if (!baseline || change == null) return 0;
-  if (change > 0) return Math.max(0.01, parseFloat(((change / baseline) * 100).toFixed(2)));
+  if (change > 0) return Math.max(0.01, parseFloat(((change / baseline) * 10000).toFixed(2)));
   return 0;
 }
 
