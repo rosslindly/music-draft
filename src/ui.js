@@ -230,7 +230,7 @@ export function renderCreateLeague(onContinue, onBack) {
 
         <div class="create-league-header">
           <h1 class="create-league-title">Create your league</h1>
-          <p class="create-league-sub">Name your league and set it up for your crew.</p>
+          <p class="create-league-sub">Placeholder copy TBD.</p>
         </div>
 
         <div class="create-league-field">
@@ -244,7 +244,6 @@ export function renderCreateLeague(onContinue, onBack) {
             autocomplete="off"
             spellcheck="false"
           />
-          <p class="create-league-field-hint">Up to 40 characters.</p>
         </div>
 
         <div class="create-league-fields-row">
@@ -624,7 +623,7 @@ function buildArtistStatsRows(artistId, snapshots) {
   return rows.join('');
 }
 
-export function renderScore({ results, totalPoints, standings, league, role, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile }) {
+export function renderScore({ results, totalPoints, standings, league, role, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile, onLeagueSettings }) {
   const isCommissioner = role === 'commissioner';
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
@@ -669,7 +668,10 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
             <div class="lh-league-info">
               <div class="lh-league-name">${escapeHtml(league.name)}</div>
               <div class="lh-league-meta">${escapeHtml(league.admin)}, Commissioner · ${league.teamCount} / ${league.maxTeams} teams</div>
-              <div class="lh-role-badge lh-role-badge--${isCommissioner ? 'commissioner' : 'member'}">${isCommissioner ? 'Commissioner' : 'Member'}</div>
+              <div class="lh-league-meta-row">
+                <div class="lh-role-badge lh-role-badge--${isCommissioner ? 'commissioner' : 'member'}">${isCommissioner ? 'Commissioner' : 'Member'}</div>
+                ${isCommissioner ? `<button class="lh-settings-link" id="lh-settings-btn">League Settings</button>` : ''}
+              </div>
             </div>
           </div>
           <div class="lh-score-block">
@@ -739,13 +741,6 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
               </li>
             `).join('')}
           </ul>
-          ${isCommissioner && league.inviteCode ? `
-          <div class="lh-invite-banner">
-            <span class="lh-invite-banner-label">Invite Code</span>
-            <span class="lh-invite-banner-code">${escapeHtml(league.inviteCode)}</span>
-            <button class="btn-copy-code btn-copy-code--sm" id="lh-copy-code-btn">Copy</button>
-          </div>
-          ` : ''}
         </section>
       </div>
     </div>
@@ -776,12 +771,86 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
     });
   });
 
-  const copyBtn = document.getElementById('lh-copy-code-btn');
-  if (copyBtn) {
+  if (isCommissioner && onLeagueSettings) {
+    document.getElementById('lh-settings-btn')?.addEventListener('click', onLeagueSettings);
+  }
+}
+
+// --- League Settings View ---
+
+export function renderLeagueSettings(league, { onBack, onSave }) {
+  const currentName = league?.name ?? '';
+  const currentStartDate = league?.scheduledStartDate ?? '';
+
+  app.innerHTML = `
+    <div class="view view-settings">
+      <div class="settings-card">
+        <button class="btn-back" id="ls-back-btn">← Back</button>
+
+        <h1 class="settings-title">League Settings</h1>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Details</div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="ls-name-input">League Name</label>
+            <input
+              type="text"
+              id="ls-name-input"
+              class="settings-handle-input-field"
+              value="${escapeHtml(currentName)}"
+              maxlength="40"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="settings-field">
+            <label class="settings-field-label" for="ls-start-date-input">Start Date</label>
+            <input
+              type="date"
+              id="ls-start-date-input"
+              class="settings-handle-input-field"
+              value="${escapeHtml(currentStartDate)}"
+            />
+          </div>
+          <button class="settings-save-btn" id="ls-save-btn" disabled>Save Changes</button>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-title">Invite Others</div>
+          <p class="settings-invite-hint">Share this code with friends to invite them to your league.</p>
+          <div class="settings-invite-row">
+            <span class="settings-invite-code">${escapeHtml(league?.inviteCode ?? '—')}</span>
+            <button class="btn-copy-code" id="ls-copy-code-btn">Copy</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('ls-back-btn').addEventListener('click', onBack);
+
+  const nameInput = document.getElementById('ls-name-input');
+  const startDateInput = document.getElementById('ls-start-date-input');
+  const saveBtn = document.getElementById('ls-save-btn');
+
+  function checkDirty() {
+    saveBtn.disabled = nameInput.value.trim() === currentName && startDateInput.value === currentStartDate;
+  }
+  nameInput.addEventListener('input', checkDirty);
+  startDateInput.addEventListener('change', checkDirty);
+
+  saveBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) return;
+    onSave({ name, scheduledStartDate: startDateInput.value || null });
+  });
+
+  const copyBtn = document.getElementById('ls-copy-code-btn');
+  if (copyBtn && league?.inviteCode) {
     copyBtn.addEventListener('click', () => {
       navigator.clipboard.writeText(league.inviteCode).then(() => {
         copyBtn.textContent = 'Copied!';
-        setTimeout(() => { copyBtn.textContent = 'Copy Code'; }, 2000);
+        setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
       });
     });
   }

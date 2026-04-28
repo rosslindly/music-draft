@@ -3,7 +3,7 @@ import { login, handleCallback, logout } from './session.js';
 import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderSettings, renderLoading } from './ui.js';
+import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLeagueSettings, renderSettings, renderLoading } from './ui.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +61,7 @@ const ROUTES = {
   BASELINE:        '#set-week-1-baseline',
   WEEKLY_UPDATE:   '#weekly-update',
   LEAGUE:          '#league/1',
+  LEAGUE_SETTINGS: '#league-settings',
   SETTINGS:        '#settings',
 };
 
@@ -100,8 +101,9 @@ async function renderRoute(route, state = {}) {
     case ROUTES.DRAFT:           return showDraft(state.preSelected ?? []);
     case ROUTES.BASELINE:      return showBaselineEntry(withImages(getLineup()));
     case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(withImages(getLineup()), state.weekNumber);
-    case ROUTES.LEAGUE:        return showScore(withImages(getLineup()));
-    case ROUTES.SETTINGS:      return showSettings();
+    case ROUTES.LEAGUE:          return showScore(withImages(getLineup()));
+    case ROUTES.LEAGUE_SETTINGS: return showLeagueSettings();
+    case ROUTES.SETTINGS:        return showSettings();
     default:                   return autoNavigate();
   }
 }
@@ -366,6 +368,7 @@ async function showScore(lineup) {
       weeklyUpdate: null,
       profile,
       onProfile() { navigate(ROUTES.SETTINGS); },
+      onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
       onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
       onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
       onEditLineup() {},
@@ -418,9 +421,21 @@ async function showScore(lineup) {
       : null,
     profile,
     onProfile() { navigate(ROUTES.SETTINGS); },
+    onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
     onNewDraft()   { clearAll(); navigate(ROUTES.WELCOME); },
     onLogout()     { logout(); clearAll(); navigate(ROUTES.WELCOME); },
     onEditLineup() { navigate(ROUTES.DRAFT, { preSelected: lineup }); },
+  });
+}
+
+function showLeagueSettings() {
+  const league = getLeague();
+  renderLeagueSettings(league, {
+    onBack: () => history.back(),
+    onSave({ name, scheduledStartDate }) {
+      saveLeague({ ...league, name, scheduledStartDate });
+      history.back();
+    },
   });
 }
 
