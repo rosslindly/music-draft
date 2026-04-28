@@ -115,9 +115,89 @@ export function renderWelcome(onJoin, onCreate) {
   document.getElementById('welcome-create-btn').addEventListener('click', onCreate);
 }
 
+// --- Enter Invite Code View ---
+
+export function renderEnterInviteCode(onContinue, onBack) {
+  app.innerHTML = `
+    <div class="view view-onboarding">
+      <div class="onboarding-card">
+        <button class="btn-back" id="invite-back-btn">← Back</button>
+
+        <div class="onboarding-header">
+          <h1 class="onboarding-title">Enter Invite Code</h1>
+          <p class="onboarding-sub">Ask your league commissioner for your 6-character invite code.</p>
+        </div>
+
+        <div class="onboarding-field">
+          <label class="onboarding-label" for="invite-code-input">Invite code</label>
+          <div class="onboarding-handle-wrap">
+            <input
+              type="text"
+              id="invite-code-input"
+              class="onboarding-handle-input"
+              placeholder="e.g. INDIE1"
+              maxlength="8"
+              autocomplete="off"
+              spellcheck="false"
+              style="text-transform:uppercase;letter-spacing:0.12em"
+            />
+          </div>
+          <p class="onboarding-field-hint" id="invite-error" style="display:none;color:#ef4444">Invalid invite code. Please try again.</p>
+        </div>
+
+        <button class="btn-primary onboarding-continue-btn" id="invite-continue-btn" disabled>Find League →</button>
+      </div>
+    </div>
+  `;
+
+  const codeInput = document.getElementById('invite-code-input');
+  const continueBtn = document.getElementById('invite-continue-btn');
+  const errorHint = document.getElementById('invite-error');
+
+  codeInput.addEventListener('input', () => {
+    codeInput.value = codeInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    continueBtn.disabled = codeInput.value.length < 4;
+    errorHint.style.display = 'none';
+  });
+
+  document.getElementById('invite-back-btn').addEventListener('click', onBack);
+
+  continueBtn.addEventListener('click', () => {
+    const code = codeInput.value.trim();
+    if (code.length < 4) return;
+    onContinue(code);
+  });
+}
+
 // --- Onboarding View ---
 
-export function renderOnboarding(onContinue, onBack) {
+function avatarColorFromString(str) {
+  const sum = str.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  return AVATAR_COLORS[sum % AVATAR_COLORS.length];
+}
+
+export function renderOnboarding(onContinue, onBack, opts = {}) {
+  const { anonymous = false, defaultHandle = '' } = opts;
+
+  const photoSection = anonymous ? `` : `
+    <div class="onboarding-photo-wrap">
+      <div class="onboarding-photo" id="onboarding-photo" role="button" tabindex="0" aria-label="Upload profile photo">
+        <svg class="onboarding-photo-placeholder" id="onboarding-photo-placeholder" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="24" cy="18" r="8" stroke="#7c3aed" stroke-width="2"/>
+          <path d="M8 42c0-8.837 7.163-14 16-14s16 5.163 16 14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <div class="onboarding-photo-overlay">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="flex-shrink:0">
+            <path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+          </svg>
+          Upload photo
+        </div>
+      </div>
+      <input type="file" id="photo-input" accept="image/*" style="display:none" />
+      <p class="onboarding-photo-hint">Optional · Tap to change</p>
+    </div>
+  `;
+
   app.innerHTML = `
     <div class="view view-onboarding">
       <div class="onboarding-card">
@@ -125,25 +205,10 @@ export function renderOnboarding(onContinue, onBack) {
 
         <div class="onboarding-header">
           <h1 class="onboarding-title">Set up your profile</h1>
-          <p class="onboarding-sub">Create your player profile to get started.</p>
+          <p class="onboarding-sub">${anonymous ? 'Choose a handle to represent you in the league.' : 'Create your player profile to get started.'}</p>
         </div>
 
-        <div class="onboarding-photo-wrap">
-          <div class="onboarding-photo" id="onboarding-photo" role="button" tabindex="0" aria-label="Upload profile photo">
-            <svg class="onboarding-photo-placeholder" id="onboarding-photo-placeholder" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="24" cy="18" r="8" stroke="#7c3aed" stroke-width="2"/>
-              <path d="M8 42c0-8.837 7.163-14 16-14s16 5.163 16 14" stroke="#7c3aed" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <div class="onboarding-photo-overlay">
-              <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" style="flex-shrink:0">
-                <path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
-              </svg>
-              Upload photo
-            </div>
-          </div>
-          <input type="file" id="photo-input" accept="image/*" style="display:none" />
-          <p class="onboarding-photo-hint">Optional · Tap to change</p>
-        </div>
+        ${photoSection}
 
         <div class="onboarding-field">
           <label class="onboarding-label" for="handle-input">Your handle</label>
@@ -157,18 +222,16 @@ export function renderOnboarding(onContinue, onBack) {
               maxlength="24"
               autocomplete="off"
               spellcheck="false"
+              value="${escapeHtml(defaultHandle)}"
             />
           </div>
-          <p class="onboarding-field-hint">Letters, numbers, and underscores only.</p>
         </div>
 
-        <button class="btn-primary onboarding-continue-btn" id="onboarding-continue-btn" disabled>Continue →</button>
+        <button class="btn-primary onboarding-continue-btn" id="onboarding-continue-btn" ${defaultHandle.length >= 2 ? '' : 'disabled'}>Continue →</button>
       </div>
     </div>
   `;
 
-  const photoEl = document.getElementById('onboarding-photo');
-  const photoInput = document.getElementById('photo-input');
   const handleInput = document.getElementById('handle-input');
   const continueBtn = document.getElementById('onboarding-continue-btn');
 
@@ -178,32 +241,41 @@ export function renderOnboarding(onContinue, onBack) {
     continueBtn.disabled = handleInput.value.trim().length < 2;
   }
 
-  function applyPhoto(url) {
-    photoDataUrl = url;
-    photoEl.style.backgroundImage = `url(${url})`;
-    photoEl.style.backgroundSize = 'cover';
-    photoEl.style.backgroundPosition = 'center';
-    photoEl.classList.add('has-photo');
-    const placeholder = document.getElementById('onboarding-photo-placeholder');
-    if (placeholder) placeholder.style.display = 'none';
+  if (anonymous) {
+    // Update avatar initial and color as handle changes
+    handleInput.addEventListener('input', () => {
+      handleInput.value = handleInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+      updateContinue();
+    });
+  } else {
+    const photoEl = document.getElementById('onboarding-photo');
+    const photoInput = document.getElementById('photo-input');
+
+    function applyPhoto(url) {
+      photoDataUrl = url;
+      photoEl.style.backgroundImage = `url(${url})`;
+      photoEl.style.backgroundSize = 'cover';
+      photoEl.style.backgroundPosition = 'center';
+      photoEl.classList.add('has-photo');
+      const placeholder = document.getElementById('onboarding-photo-placeholder');
+      if (placeholder) placeholder.style.display = 'none';
+    }
+
+    photoEl.addEventListener('click', () => photoInput.click());
+    photoEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') photoInput.click(); });
+    photoInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => { applyPhoto(ev.target.result); };
+      reader.readAsDataURL(file);
+    });
+
+    handleInput.addEventListener('input', () => {
+      handleInput.value = handleInput.value.replace(/[^a-zA-Z0-9_]/g, '');
+      updateContinue();
+    });
   }
-
-  // Photo upload
-  photoEl.addEventListener('click', () => photoInput.click());
-  photoEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') photoInput.click(); });
-  photoInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => { applyPhoto(ev.target.result); };
-    reader.readAsDataURL(file);
-  });
-
-  // Handle — alphanumeric + underscore only
-  handleInput.addEventListener('input', () => {
-    handleInput.value = handleInput.value.replace(/[^a-zA-Z0-9_]/g, '');
-    updateContinue();
-  });
 
   document.getElementById('onboarding-back-btn').addEventListener('click', onBack);
 

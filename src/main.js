@@ -3,7 +3,7 @@ import { login, handleCallback, logout } from './session.js';
 import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
 import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber } from './scoring.js';
-import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLeagueSettings, renderSettings, renderLoading } from './ui.js';
+import { renderWelcome, renderEnterInviteCode, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLeagueSettings, renderSettings, renderLoading } from './ui.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +37,17 @@ function clearAll() {
   clearTopArtistsCache();
 }
 
+// ── Handle generator ──────────────────────────────────────────────────────────
+
+function generateHandle() {
+  const adj  = ['Groovy','Smooth','Wild','Indie','Electric','Cosmic','Neon','Velvet','Echo','Sonic','Mellow','Dusty','Lunar','Fuzzy','Slick'];
+  const noun = ['Beat','Wave','Tune','Vibe','Groove','Rhythm','Bass','Track','Chord','Drift','Pulse','Tempo','Haze','Bloom','Storm'];
+  const a = adj[Math.floor(Math.random() * adj.length)];
+  const n = noun[Math.floor(Math.random() * noun.length)];
+  const num = Math.floor(Math.random() * 90) + 10;
+  return `${a}${n}${num}`;
+}
+
 // ── Runtime state ─────────────────────────────────────────────────────────────
 
 const MOCK_JOIN_LEAGUE = {
@@ -50,17 +61,18 @@ const MOCK_JOIN_LEAGUE = {
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 const ROUTES = {
-  WELCOME:         '#welcome',
-  ONBOARDING:      '#onboarding-profile',
-  CREATE_LEAGUE:   '#create-league',
-  SELECT_LEAGUE:   '#select-league',
-  SPOTIFY_CONNECT: '#spotify-connect',
-  DRAFT:           '#draft-lineup',
-  BASELINE:        '#set-week-1-baseline',
-  WEEKLY_UPDATE:   '#weekly-update',
-  LEAGUE:          '#league/1',
-  LEAGUE_SETTINGS: '#league-settings',
-  SETTINGS:        '#settings',
+  WELCOME:           '#welcome',
+  ENTER_INVITE_CODE: '#enter-invite-code',
+  ONBOARDING:        '#onboarding-profile',
+  CREATE_LEAGUE:     '#create-league',
+  SELECT_LEAGUE:     '#select-league',
+  SPOTIFY_CONNECT:   '#spotify-connect',
+  DRAFT:             '#draft-lineup',
+  BASELINE:          '#set-week-1-baseline',
+  WEEKLY_UPDATE:     '#weekly-update',
+  LEAGUE:            '#league/1',
+  LEAGUE_SETTINGS:   '#league-settings',
+  SETTINGS:          '#settings',
 };
 
 // ── Navigation helpers ────────────────────────────────────────────────────────
@@ -91,9 +103,10 @@ window.addEventListener('popstate', (e) => {
 
 async function renderRoute(route, state = {}) {
   switch (route) {
-    case ROUTES.WELCOME:       return showWelcome();
-    case ROUTES.ONBOARDING:    return showOnboarding();
-    case ROUTES.CREATE_LEAGUE: return showCreateLeague();
+    case ROUTES.WELCOME:           return showWelcome();
+    case ROUTES.ENTER_INVITE_CODE: return showEnterInviteCode();
+    case ROUTES.ONBOARDING:        return showOnboarding();
+    case ROUTES.CREATE_LEAGUE:     return showCreateLeague();
     case ROUTES.SELECT_LEAGUE:   return showSelectLeague();
     case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect();
     case ROUTES.DRAFT:           return showDraft(state.preSelected ?? []);
@@ -127,13 +140,18 @@ async function autoNavigate() {
   const league = getLeague();
   if (!league) {
     const intent = loadIntent();
-    navigate(intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE);
+    navigate(intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.ENTER_INVITE_CODE);
     return;
   }
 
+  const role = getLeague()?.role;
   const lineup = getLineup();
   if (!lineup) {
-    navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
+    if (role === 'member') {
+      navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
+    } else {
+      navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
+    }
     return;
   }
 
@@ -144,7 +162,7 @@ async function autoNavigate() {
 
 function showWelcome() {
   renderWelcome(
-    () => { saveIntent('join'); navigate(ROUTES.ONBOARDING); },
+    () => { saveIntent('join'); navigate(ROUTES.ENTER_INVITE_CODE); },
     () => {
       saveIntent('create');
       const profile = loadProfile();
@@ -155,14 +173,34 @@ function showWelcome() {
   );
 }
 
+function showEnterInviteCode() {
+  renderEnterInviteCode(
+    (_code) => {
+      // Mock: any valid-format code resolves to the mock league
+      navigate(ROUTES.SELECT_LEAGUE);
+    },
+    () => { navigate(ROUTES.WELCOME); },
+  );
+}
+
 function showOnboarding() {
+  const intent = loadIntent();
+  const anonymous = intent === 'join';
+  const defaultHandle = anonymous ? generateHandle() : '';
+
   renderOnboarding(
     (profile) => {
       saveProfile(profile);
-      const intent = loadIntent();
-      navigate(intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE);
+      if (intent === 'create') {
+        navigate(ROUTES.CREATE_LEAGUE);
+      } else if (getLeague()) {
+        navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
+      } else {
+        navigate(ROUTES.ENTER_INVITE_CODE);
+      }
     },
     () => { navigate(ROUTES.WELCOME); },
+    { anonymous, defaultHandle },
   );
 }
 
@@ -198,22 +236,24 @@ function showSelectLeague() {
         maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
       });
       clearLineup();
-      navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
+      navigate(ROUTES.ONBOARDING);
     },
-    () => { navigate(ROUTES.ONBOARDING); },
+    () => { navigate(ROUTES.ENTER_INVITE_CODE); },
   );
 }
 
 function showSpotifyConnect() {
   const intent = loadIntent();
-  const backRoute = intent === 'create' ? ROUTES.LEAGUE : ROUTES.SELECT_LEAGUE;
+  const isJoin = intent === 'join';
+  const backRoute = intent === 'create' ? ROUTES.LEAGUE : ROUTES.ONBOARDING;
+  const postConnectRoute = isJoin ? ROUTES.LEAGUE : ROUTES.DRAFT;
   renderSpotifyConnect(
     async () => {
       await login(); // redirects to Spotify — execution stops here
     },
     () => {
       saveProfile({ ...loadProfile(), spotifyConnected: false });
-      navigate(ROUTES.DRAFT);
+      navigate(postConnectRoute);
     },
     () => { navigate(backRoute); },
   );
@@ -433,10 +473,11 @@ if (oauthCode) {
       saveProfile({ ...loadProfile(), spotifyConnected: true });
       history.replaceState({}, '', '/');
       isInitialLoad = false;
+      const postOAuthRoute = getLeague()?.role === 'member' ? ROUTES.LEAGUE : ROUTES.DRAFT;
       renderSpotifyConnect(
-        () => navigate(ROUTES.DRAFT),
-        () => navigate(ROUTES.DRAFT),
-        () => navigate(ROUTES.DRAFT),
+        () => navigate(postOAuthRoute),
+        () => navigate(postOAuthRoute),
+        () => navigate(postOAuthRoute),
         true,
       );
     })

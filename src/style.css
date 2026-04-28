@@ -228,6 +228,21 @@ a:hover { text-decoration: underline; }
 .onboarding-photo.has-photo .onboarding-photo-placeholder { display: none; }
 .onboarding-photo.has-photo:hover .onboarding-photo-overlay { opacity: 1; }
 
+.onboarding-photo--generated {
+  border-style: solid;
+  border-color: transparent;
+  cursor: default;
+  font-size: 2rem;
+  font-weight: 800;
+  color: rgba(255,255,255,0.9);
+}
+.onboarding-photo--generated:hover { border-color: transparent; background-color: inherit; }
+
+.onboarding-photo-initial {
+  line-height: 1;
+  user-select: none;
+}
+
 .onboarding-photo-placeholder { width: 40px; height: 40px; flex-shrink: 0; }
 
 .onboarding-photo-overlay {
