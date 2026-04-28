@@ -172,6 +172,7 @@ function showCreateLeague() {
     (newLeague) => {
       saveLeague({
         ...newLeague,
+        role: 'commissioner',
         admin: profile?.handle ?? '@you',
         teamCount: 1,
         maxTeams: newLeague.maxParticipants ?? 10,
@@ -188,6 +189,7 @@ function showSelectLeague() {
     () => {
       saveLeague({
         name: MOCK_JOIN_LEAGUE.name,
+        role: 'member',
         inviteCode: 'INDIE1',
         createdAt: new Date().toISOString(),
         startDate: null,
@@ -336,6 +338,8 @@ async function showScore(lineup) {
     ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  const role = league?.role ?? 'commissioner';
+
   const displayLeague = {
     name: league?.name ?? 'My League',
     admin: league?.admin ?? profile?.handle ?? '@you',
@@ -351,6 +355,7 @@ async function showScore(lineup) {
       totalPoints: 0,
       standings: [{ handle: profile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
       league: displayLeague,
+      role,
       leagueStarted: false,
       weeklyUpdate: null,
       profile,
@@ -397,6 +402,7 @@ async function showScore(lineup) {
     totalPoints,
     standings,
     league: displayLeague,
+    role,
     leagueStarted,
     snapshots,
     weeklyUpdate,

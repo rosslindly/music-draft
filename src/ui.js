@@ -106,9 +106,8 @@ export function renderWelcome(onJoin, onCreate) {
 
         <div class="welcome-ctas">
           <button class="btn-primary welcome-cta-btn" id="welcome-join-btn">Join a League →</button>
-          <button class="btn-secondary welcome-cta-btn" id="welcome-create-btn">Create a League</button>
+          <button class="btn-secondary welcome-cta-btn" id="welcome-create-btn">I'm the Commissioner</button>
         </div>
-        <p class="welcome-hint">Free to play · No account needed</p>
       </div>
     </div>
   `;
@@ -125,7 +124,6 @@ export function renderOnboarding(onContinue, onBack) {
         <button class="btn-back" id="onboarding-back-btn">← Back</button>
 
         <div class="onboarding-header">
-          <div class="onboarding-step-label">Almost there</div>
           <h1 class="onboarding-title">Set up your profile</h1>
           <p class="onboarding-sub">Create your player profile to get started.</p>
         </div>
@@ -231,7 +229,6 @@ export function renderCreateLeague(onContinue, onBack) {
         <button class="btn-back" id="create-league-back-btn">← Back</button>
 
         <div class="create-league-header">
-          <div class="create-league-step-label">One more step</div>
           <h1 class="create-league-title">Create your league</h1>
           <p class="create-league-sub">Name your league and set it up for your crew.</p>
         </div>
@@ -477,7 +474,6 @@ export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = 
         <button class="btn-back" id="spotify-back-btn">← Back</button>
 
         <div class="onboarding-header">
-          <div class="onboarding-step-label">Almost ready</div>
           <h1 class="onboarding-title">Connect Spotify</h1>
           <p class="onboarding-sub">We use your Spotify listening history to build your draft roster.</p>
         </div>
@@ -628,7 +624,8 @@ function buildArtistStatsRows(artistId, snapshots) {
   return rows.join('');
 }
 
-export function renderScore({ results, totalPoints, standings, league, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile }) {
+export function renderScore({ results, totalPoints, standings, league, role, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile }) {
+  const isCommissioner = role === 'commissioner';
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `
@@ -672,6 +669,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
             <div class="lh-league-info">
               <div class="lh-league-name">${escapeHtml(league.name)}</div>
               <div class="lh-league-meta">${escapeHtml(league.admin)}, Commissioner · ${league.teamCount} / ${league.maxTeams} teams</div>
+              <div class="lh-role-badge lh-role-badge--${isCommissioner ? 'commissioner' : 'member'}">${isCommissioner ? 'Commissioner' : 'Member'}</div>
             </div>
           </div>
           <div class="lh-score-block">
@@ -741,7 +739,7 @@ export function renderScore({ results, totalPoints, standings, league, leagueSta
               </li>
             `).join('')}
           </ul>
-          ${league.inviteCode ? `
+          ${isCommissioner && league.inviteCode ? `
           <div class="lh-invite-banner">
             <span class="lh-invite-banner-label">Invite Code</span>
             <span class="lh-invite-banner-code">${escapeHtml(league.inviteCode)}</span>
