@@ -1358,6 +1358,12 @@ img.artist-avatar {
   min-width: 48px;
 }
 
+.standings-pts--pending {
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
 .standings-pts-label {
   font-size: 0.72rem;
   font-weight: 500;
