@@ -57,6 +57,7 @@ const MOCK_JOIN_LEAGUE = {
   teamCount: 7,
   maxTeams: 10,
   durationWeeks: 8,
+  scheduledStartDate: (() => { const d = new Date(); d.setDate(d.getDate() + 3); return d.toISOString().split('T')[0]; })(),
 };
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -232,6 +233,7 @@ function showSelectLeague() {
         inviteCode: 'INDIE1',
         createdAt: new Date().toISOString(),
         startDate: null,
+        scheduledStartDate: MOCK_JOIN_LEAGUE.scheduledStartDate,
         admin: MOCK_JOIN_LEAGUE.admin,
         teamCount: MOCK_JOIN_LEAGUE.teamCount,
         maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
@@ -358,12 +360,12 @@ async function showWeeklyUpdate(lineup, overrideWeek) {
 async function showScore(lineup) {
   const profile = loadProfile();
   const league = getLeague();
-  const leagueStarted = getSnapshots().some(s => s.week > 1);
   const snapshots = getSnapshots();
 
   const scheduledStart = league?.scheduledStartDate ? new Date(league.scheduledStartDate) : null;
   const todayMidnight = new Date();
   todayMidnight.setHours(0, 0, 0, 0);
+  const leagueStarted = snapshots.some(s => s.week > 1) || (scheduledStart !== null && todayMidnight >= scheduledStart);
   const daysUntilStart = scheduledStart
     ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))
     : 0;
@@ -489,12 +491,7 @@ if (oauthCode) {
       isInitialLoad = false;
       const postOAuthRoute = localStorage.getItem('md_oauth_next') ?? (getLeague()?.role === 'member' ? ROUTES.LEAGUE : ROUTES.DRAFT);
       localStorage.removeItem('md_oauth_next');
-      renderSpotifyConnect(
-        () => navigate(postOAuthRoute),
-        () => navigate(postOAuthRoute),
-        () => navigate(postOAuthRoute),
-        true,
-      );
+      navigate(postOAuthRoute);
     })
     .catch((err) => {
       console.error('Spotify OAuth callback failed:', err);

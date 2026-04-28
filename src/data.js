@@ -138,6 +138,7 @@ export async function getTopArtists() {
       // Real listener counts are entered manually at baseline entry.
       monthlyListeners: null,
       imageUrl: a.images?.at(-1)?.url ?? null,
+      spotifyUrl: a.external_urls?.spotify ?? null,
     }));
 
     localStorage.setItem(TOP_ARTISTS_KEY, JSON.stringify(artists));
