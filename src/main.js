@@ -2,7 +2,7 @@
 import { login, handleCallback, logout } from './session.js';
 import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
-import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber, hasSubmittedThisWeek } from './scoring.js';
+import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber } from './scoring.js';
 import { renderWelcome, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLeagueSettings, renderSettings, renderLoading } from './ui.js';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -38,8 +38,6 @@ function clearAll() {
 }
 
 // ── Runtime state ─────────────────────────────────────────────────────────────
-
-let weeklyBannerDismissed = false;
 
 const MOCK_JOIN_LEAGUE = {
   name: 'Indie Tastemakers',
@@ -136,12 +134,6 @@ async function autoNavigate() {
   const lineup = getLineup();
   if (!lineup) {
     navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
-    return;
-  }
-
-  const hasBaseline = getSnapshots().some(s => s.week === 1);
-  if (!hasBaseline) {
-    navigate(ROUTES.BASELINE);
     return;
   }
 
@@ -273,7 +265,7 @@ async function showDraft(preSelected = []) {
       if (league && !league.startDate) {
         saveLeague({ ...league, startDate: new Date().toISOString() });
       }
-      navigate(ROUTES.BASELINE);
+      navigate(ROUTES.LEAGUE);
     },
     () => { navigate(backRoute); },
     preSelected,
@@ -320,24 +312,7 @@ async function showScore(lineup) {
   const profile = loadProfile();
   const league = getLeague();
   const leagueStarted = getSnapshots().some(s => s.week > 1);
-
   const snapshots = getSnapshots();
-  const hasBaseline = snapshots.some(s => s.week === 1);
-
-  const weekNumber = getCurrentWeekNumber(league?.startDate);
-  const updateDue = hasBaseline && weekNumber != null && weekNumber > 1 && !hasSubmittedThisWeek(league?.startDate);
-
-  const maxSnapshotWeek = hasBaseline ? Math.max(...snapshots.map(s => s.week)) : null;
-  const nextWeekNumber = maxSnapshotWeek != null ? maxSnapshotWeek + 1 : null;
-  const canManuallyUpdate = hasBaseline && lineup && nextWeekNumber != null && !snapshots.some(s => s.week === nextWeekNumber);
-
-  const weeklyUpdate = updateDue && !weeklyBannerDismissed && lineup
-    ? {
-        weekNumber,
-        onUpdate: () => { navigate(ROUTES.WEEKLY_UPDATE, { weekNumber }); },
-        onDismiss: () => { weeklyBannerDismissed = true; showScore(lineup); },
-      }
-    : null;
 
   const scheduledStart = league?.scheduledStartDate ? new Date(league.scheduledStartDate) : null;
   const todayMidnight = new Date();
@@ -365,7 +340,6 @@ async function showScore(lineup) {
       league: displayLeague,
       role,
       leagueStarted: false,
-      weeklyUpdate: null,
       profile,
       onProfile() { navigate(ROUTES.SETTINGS); },
       onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
@@ -414,11 +388,6 @@ async function showScore(lineup) {
     role,
     leagueStarted,
     snapshots,
-    weeklyUpdate,
-    manualUpdateWeek: canManuallyUpdate ? nextWeekNumber : null,
-    onManualWeeklyUpdate: canManuallyUpdate
-      ? () => { navigate(ROUTES.WEEKLY_UPDATE, { weekNumber: nextWeekNumber }); }
-      : null,
     profile,
     onProfile() { navigate(ROUTES.SETTINGS); },
     onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
@@ -430,12 +399,23 @@ async function showScore(lineup) {
 
 function showLeagueSettings() {
   const league = getLeague();
+  const lineup = withImages(getLineup());
+  const snapshots = getSnapshots();
+  const hasBaseline = snapshots.some(s => s.week === 1);
+  const maxSnapshotWeek = hasBaseline ? Math.max(...snapshots.map(s => s.week)) : null;
+  const nextWeekNumber = maxSnapshotWeek != null ? maxSnapshotWeek + 1 : null;
+  const canEnterWeekly = hasBaseline && lineup && nextWeekNumber != null && !snapshots.some(s => s.week === nextWeekNumber);
+
   renderLeagueSettings(league, {
     onBack: () => history.back(),
     onSave({ name, scheduledStartDate }) {
       saveLeague({ ...league, name, scheduledStartDate });
       history.back();
     },
+    hasBaseline,
+    onEnterBaseline: !hasBaseline && lineup ? () => navigate(ROUTES.BASELINE) : null,
+    nextWeekNumber: canEnterWeekly ? nextWeekNumber : null,
+    onEnterWeekly: canEnterWeekly ? () => navigate(ROUTES.WEEKLY_UPDATE, { weekNumber: nextWeekNumber }) : null,
   });
 }
 

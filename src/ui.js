@@ -343,6 +343,25 @@ export function renderLeague(league, onJoin, onBack) {
   document.getElementById('league-back-btn').addEventListener('click', onBack);
 }
 
+// --- Listener input helper ---
+
+// Attaches focus/input/blur handlers to a text input used for listener counts:
+// focus → strips commas for editing, input → allows digits only, blur → reformats with commas.
+function initListenerInput(input, onchange) {
+  input.addEventListener('focus', () => {
+    input.value = input.value.replace(/,/g, '');
+  });
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/[^\d]/g, '');
+    onchange();
+  });
+  input.addEventListener('blur', () => {
+    const n = parseInt(input.value, 10);
+    if (!isNaN(n) && n > 0) input.value = n.toLocaleString();
+    onchange();
+  });
+}
+
 // --- Baseline Entry View ---
 
 export function renderBaselineEntry(lineup, existing, onSubmit) {
@@ -362,13 +381,11 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
                 <div class="artist-name">${escapeHtml(a.name)}</div>
               </div>
               <input
-                type="number"
+                type="text"
+                inputmode="numeric"
                 class="baseline-input"
                 data-id="${escapeHtml(a.id)}"
-                placeholder="e.g. 4200000"
-                min="1"
-                step="1"
-                ${existing[a.id] ? `value="${existing[a.id]}"` : ''}
+                ${existing[a.id] ? `value="${Number(existing[a.id]).toLocaleString()}"` : ''}
               />
             </li>
           `).join('')}
@@ -384,20 +401,20 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
 
   function validate() {
     const allValid = inputs.every(inp => {
-      const val = parseInt(inp.value, 10);
+      const val = parseInt(inp.value.replace(/,/g, ''), 10);
       return Number.isInteger(val) && val > 0;
     });
     saveBtn.disabled = !allValid;
   }
 
-  inputs.forEach(inp => inp.addEventListener('input', validate));
+  inputs.forEach(inp => initListenerInput(inp, validate));
   validate();
 
   saveBtn.addEventListener('click', () => {
     const entries = lineup.map((a, i) => ({
       id: a.id,
       name: a.name,
-      monthlyListeners: parseInt(inputs[i].value, 10),
+      monthlyListeners: parseInt(inputs[i].value.replace(/,/g, ''), 10),
     }));
     onSubmit(entries);
   });
@@ -423,13 +440,11 @@ export function renderWeeklyUpdate(lineup, weekNumber, prefilled = {}, onSubmit)
                 <div class="artist-name">${escapeHtml(a.name)}</div>
               </div>
               <input
-                type="number"
+                type="text"
+                inputmode="numeric"
                 class="baseline-input weekly-update-input"
                 data-id="${escapeHtml(a.id)}"
-                placeholder="e.g. 4200000"
-                min="1"
-                step="1"
-                ${prefilled[a.id] ? `value="${prefilled[a.id]}"` : ''}
+                ${prefilled[a.id] ? `value="${Number(prefilled[a.id]).toLocaleString()}"` : ''}
               />
             </li>
           `).join('')}
@@ -445,20 +460,20 @@ export function renderWeeklyUpdate(lineup, weekNumber, prefilled = {}, onSubmit)
 
   function validate() {
     const allValid = inputs.every(inp => {
-      const val = parseInt(inp.value, 10);
+      const val = parseInt(inp.value.replace(/,/g, ''), 10);
       return Number.isInteger(val) && val > 0;
     });
     saveBtn.disabled = !allValid;
   }
 
-  inputs.forEach(inp => inp.addEventListener('input', validate));
+  inputs.forEach(inp => initListenerInput(inp, validate));
   validate();
 
   saveBtn.addEventListener('click', () => {
     const entries = lineup.map((a, i) => ({
       id: a.id,
       name: a.name,
-      monthlyListeners: parseInt(inputs[i].value, 10),
+      monthlyListeners: parseInt(inputs[i].value.replace(/,/g, ''), 10),
     }));
     onSubmit(entries);
   });
@@ -623,7 +638,7 @@ function buildArtistStatsRows(artistId, snapshots) {
   return rows.join('');
 }
 
-export function renderScore({ results, totalPoints, standings, league, role, leagueStarted, snapshots, weeklyUpdate, manualUpdateWeek, onManualWeeklyUpdate, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile, onLeagueSettings }) {
+export function renderScore({ results, totalPoints, standings, league, role, leagueStarted, snapshots, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile, onLeagueSettings }) {
   const isCommissioner = role === 'commissioner';
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
@@ -642,18 +657,6 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
           ${profile ? profileChipHtml(profile) : ''}
         </div>
       </header>
-
-      ${weeklyUpdate ? `
-      <div class="update-banner" id="update-banner">
-        <div class="update-banner-inner">
-          <p class="update-banner-text">Week ${weeklyUpdate.weekNumber} is here — time to update your listener counts!</p>
-          <div class="update-banner-actions">
-            <button class="update-banner-btn-primary" id="update-now-btn">Update Now</button>
-            <button class="update-banner-btn-dismiss" id="update-dismiss-btn">Remind me later</button>
-          </div>
-        </div>
-      </div>
-      ` : ''}
 
       <div class="lh-banner">
         <div class="lh-banner-inner">
@@ -691,7 +694,6 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
           <div class="lh-section-header">
             <h3 class="lh-section-title">My Lineup</h3>
             <div class="lh-section-header-actions">
-              ${manualUpdateWeek ? `<button class="btn-enter-week" id="manual-update-btn">Enter Week ${manualUpdateWeek}</button>` : ''}
               ${!leagueStarted && results.length > 0 ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
             </div>
           </div>
@@ -749,13 +751,6 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
   if (onProfile) {
     document.getElementById('profile-chip-btn')?.addEventListener('click', onProfile);
   }
-  if (weeklyUpdate) {
-    document.getElementById('update-now-btn').addEventListener('click', weeklyUpdate.onUpdate);
-    document.getElementById('update-dismiss-btn').addEventListener('click', weeklyUpdate.onDismiss);
-  }
-  if (manualUpdateWeek && onManualWeeklyUpdate) {
-    document.getElementById('manual-update-btn').addEventListener('click', onManualWeeklyUpdate);
-  }
   if (!leagueStarted && results.length > 0) {
     document.getElementById('edit-lineup-btn').addEventListener('click', onEditLineup);
   }
@@ -778,7 +773,7 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
 
 // --- League Settings View ---
 
-export function renderLeagueSettings(league, { onBack, onSave }) {
+export function renderLeagueSettings(league, { onBack, onSave, hasBaseline, onEnterBaseline, nextWeekNumber, onEnterWeekly }) {
   const currentName = league?.name ?? '';
   const currentStartDate = league?.scheduledStartDate ?? '';
 
@@ -816,6 +811,19 @@ export function renderLeagueSettings(league, { onBack, onSave }) {
         </div>
 
         <div class="settings-section">
+          <div class="settings-section-title">Listener Data</div>
+          ${onEnterBaseline ? `
+            <p class="settings-invite-hint">Enter Week 1 listener counts to start scoring.</p>
+            <button class="settings-save-btn" id="ls-baseline-btn">Enter Week 1 Baseline →</button>
+          ` : onEnterWeekly ? `
+            <p class="settings-invite-hint">Week ${nextWeekNumber} data is ready to enter.</p>
+            <button class="settings-save-btn" id="ls-weekly-btn">Enter Week ${nextWeekNumber} →</button>
+          ` : `
+            <p class="settings-invite-hint">All listener data is up to date.</p>
+          `}
+        </div>
+
+        <div class="settings-section">
           <div class="settings-section-title">Invite Others</div>
           <p class="settings-invite-hint">Share this code with friends to invite them to your league.</p>
           <div class="settings-invite-row">
@@ -844,6 +852,13 @@ export function renderLeagueSettings(league, { onBack, onSave }) {
     if (!name) return;
     onSave({ name, scheduledStartDate: startDateInput.value || null });
   });
+
+  if (onEnterBaseline) {
+    document.getElementById('ls-baseline-btn')?.addEventListener('click', onEnterBaseline);
+  }
+  if (onEnterWeekly) {
+    document.getElementById('ls-weekly-btn')?.addEventListener('click', onEnterWeekly);
+  }
 
   const copyBtn = document.getElementById('ls-copy-code-btn');
   if (copyBtn && league?.inviteCode) {
