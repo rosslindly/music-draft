@@ -85,7 +85,7 @@ export function renderWelcome(onJoin, onCreate) {
             <div class="step-num">1</div>
             <div class="step-body">
               <strong>Draft your lineup</strong>
-              <span>Pick up to 5 artists from our roster of rising and established acts.</span>
+              <span>Pick up to 3 artists from your recent listening history.</span>
             </div>
           </div>
           <div class="welcome-step">
@@ -529,8 +529,8 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
       </div>
       <div class="draft-container">
         <h1>${isEditing ? 'Edit Your Lineup' : 'Draft Your Lineup'}</h1>
-        <p class="tagline">Draft up to 5 artists from your recent listening history.</p>
-        <p class="draft-count" id="draft-count">0 / 5 selected</p>
+        <p class="tagline">Draft up to 3 artists from your recent listening history.</p>
+        <p class="draft-count" id="draft-count">0 / 3 selected</p>
         <ul class="artist-list" id="artist-list">
           ${artists.map((a, i) => `
             <li class="artist-card${preSelectedIds.has(a.id) ? ' selected' : ''}" data-id="${escapeHtml(a.id)}">
@@ -565,7 +565,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
 
   function updateCount() {
     const n = [...cards].filter(c => c.classList.contains('selected')).length;
-    countEl.textContent = `${n} / 5 selected`;
+    countEl.textContent = `${n} / 3 selected`;
     footerCount.textContent = n > 0 ? `${n} selected` : '';
     lockBtn.disabled = n < 3;
   }
@@ -577,7 +577,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
       const cb = card.querySelector('input[type="checkbox"]');
       const already = card.classList.contains('selected');
       const total = [...cards].filter(c => c.classList.contains('selected')).length;
-      if (!already && total >= 5) return;
+      if (!already && total >= 3) return;
       card.classList.toggle('selected', !already);
       cb.checked = !already;
       updateCount();
