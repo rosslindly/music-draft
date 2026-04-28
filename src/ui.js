@@ -653,7 +653,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
   function updateCount() {
     const n = [...cards].filter(c => c.classList.contains('selected')).length;
     countEl.textContent = `${n} / 3 selected`;
-    footerCount.textContent = n > 0 ? `${n} selected` : '';
+    footerCount.textContent = `${n} / 3 selected`;
     lockBtn.disabled = n < 3;
   }
 
@@ -753,8 +753,11 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
             ${leagueStarted
               ? `<div class="lh-score-pts">${totalPoints}<span class="lh-score-pts-label"> pts</span></div>
             <div class="lh-score-rank">#${userRank} of ${standings.length}</div>`
-              : `<div class="lh-score-pts lh-score-pts--pending">—</div>
+              : league.daysUntilStart > 0
+                ? `<div class="lh-score-pts lh-score-pts--pending">—</div>
             <div class="lh-score-rank">Starts in ${league.daysUntilStart}d</div>`
+                : `<div class="lh-score-pts lh-score-pts--pending">—</div>
+            <div class="lh-score-rank">Week ${league.currentWeek}${league.durationWeeks ? ' of ' + league.durationWeeks : ''}</div>`
             }
           </div>
         </div>

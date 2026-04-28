@@ -56,6 +56,7 @@ const MOCK_JOIN_LEAGUE = {
   daysUntilStart: 3,
   teamCount: 7,
   maxTeams: 10,
+  durationWeeks: 8,
 };
 
 // ── Routes ────────────────────────────────────────────────────────────────────
@@ -234,6 +235,7 @@ function showSelectLeague() {
         admin: MOCK_JOIN_LEAGUE.admin,
         teamCount: MOCK_JOIN_LEAGUE.teamCount,
         maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
+        durationWeeks: MOCK_JOIN_LEAGUE.durationWeeks,
       });
       clearLineup();
       navigate(ROUTES.ONBOARDING);
@@ -366,12 +368,16 @@ async function showScore(lineup) {
     ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))
     : 0;
 
+  const currentWeek = getCurrentWeekNumber(league?.scheduledStartDate ?? league?.startDate) ?? 1;
+
   const role = league?.role ?? 'commissioner';
 
   const displayLeague = {
     name: league?.name ?? 'My League',
     admin: league?.admin ?? profile?.handle ?? '@you',
     daysUntilStart,
+    currentWeek,
+    durationWeeks: league?.durationWeeks ?? null,
     teamCount: league?.teamCount ?? 1,
     maxTeams: league?.maxTeams ?? 10,
     inviteCode: league?.inviteCode ?? null,
