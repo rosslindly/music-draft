@@ -553,7 +553,7 @@ export function renderWeeklyUpdate(lineup, weekNumber, prefilled = {}, onSubmit)
 
 // --- Spotify Connect View ---
 
-export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = false) {
+export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = false, hideSkip = false) {
   app.innerHTML = `
     <div class="view view-onboarding">
       <div class="onboarding-card">
@@ -574,13 +574,13 @@ export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = 
           <p class="onboarding-field-hint">Your top artists from Spotify will populate your draft roster.</p>
         </div>
 
-        <button class="btn-secondary" id="spotify-skip-btn" style="margin-top:1.25rem;width:100%">Skip for now</button>
+        ${hideSkip ? '' : `<button class="btn-secondary" id="spotify-skip-btn" style="margin-top:1.25rem;width:100%">Skip for now</button>`}
       </div>
     </div>
   `;
 
   document.getElementById('spotify-back-btn').addEventListener('click', onBack);
-  document.getElementById('spotify-skip-btn').addEventListener('click', onSkip);
+  document.getElementById('spotify-skip-btn')?.addEventListener('click', onSkip);
 
   const connectBtn = document.getElementById('spotify-connect-btn');
 

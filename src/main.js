@@ -108,7 +108,7 @@ async function renderRoute(route, state = {}) {
     case ROUTES.ONBOARDING:        return showOnboarding();
     case ROUTES.CREATE_LEAGUE:     return showCreateLeague();
     case ROUTES.SELECT_LEAGUE:   return showSelectLeague();
-    case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect();
+    case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect(state);
     case ROUTES.DRAFT:           return showDraft(state.preSelected ?? []);
     case ROUTES.BASELINE:      return showBaselineEntry(withImages(getLineup()));
     case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(withImages(getLineup()), state.weekNumber);
@@ -242,13 +242,16 @@ function showSelectLeague() {
   );
 }
 
-function showSpotifyConnect() {
+function showSpotifyConnect(state = {}) {
   const intent = loadIntent();
   const isJoin = intent === 'join';
-  const backRoute = intent === 'create' ? ROUTES.LEAGUE : ROUTES.ONBOARDING;
-  const postConnectRoute = isJoin ? ROUTES.LEAGUE : ROUTES.DRAFT;
+  const backRoute = state.next === ROUTES.DRAFT ? ROUTES.LEAGUE : intent === 'create' ? ROUTES.LEAGUE : ROUTES.ONBOARDING;
+  // Caller can pass { next: ROUTES.DRAFT } to override the default post-connect destination
+  const postConnectRoute = state.next ?? (isJoin ? ROUTES.LEAGUE : ROUTES.DRAFT);
+  const hideSkip = postConnectRoute === ROUTES.DRAFT;
   renderSpotifyConnect(
     async () => {
+      localStorage.setItem('md_oauth_next', postConnectRoute);
       await login(); // redirects to Spotify — execution stops here
     },
     () => {
@@ -256,6 +259,8 @@ function showSpotifyConnect() {
       navigate(postConnectRoute);
     },
     () => { navigate(backRoute); },
+    false,
+    hideSkip,
   );
 }
 
@@ -386,7 +391,10 @@ async function showScore(lineup) {
       onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
       onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
       onEditLineup() {},
-      onDraft()    { navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT); },
+      onDraft() {
+        const spotifyReady = loadProfile()?.spotifyConnected === true;
+        navigate(spotifyReady ? ROUTES.DRAFT : ROUTES.SPOTIFY_CONNECT, { next: ROUTES.DRAFT });
+      },
     });
     return;
   }
@@ -473,7 +481,8 @@ if (oauthCode) {
       saveProfile({ ...loadProfile(), spotifyConnected: true });
       history.replaceState({}, '', '/');
       isInitialLoad = false;
-      const postOAuthRoute = getLeague()?.role === 'member' ? ROUTES.LEAGUE : ROUTES.DRAFT;
+      const postOAuthRoute = localStorage.getItem('md_oauth_next') ?? (getLeague()?.role === 'member' ? ROUTES.LEAGUE : ROUTES.DRAFT);
+      localStorage.removeItem('md_oauth_next');
       renderSpotifyConnect(
         () => navigate(postOAuthRoute),
         () => navigate(postOAuthRoute),
