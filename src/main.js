@@ -111,7 +111,7 @@ async function renderRoute(route, state = {}) {
     case ROUTES.CREATE_LEAGUE:     return showCreateLeague();
     case ROUTES.SELECT_LEAGUE:   return showSelectLeague();
     case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect(state);
-    case ROUTES.DRAFT:           return showDraft(state.preSelected ?? []);
+    case ROUTES.DRAFT:           return showDraft(state.preSelected ?? [], state.appendMode ?? false);
     case ROUTES.BASELINE:      return showBaselineEntry(withImages(getLineup()));
     case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(withImages(getLineup()), state.weekNumber);
     case ROUTES.LEAGUE:          return showScore(withImages(getLineup()));
@@ -284,9 +284,9 @@ function showSettings() {
   });
 }
 
-async function showDraft(preSelected = []) {
+async function showDraft(preSelected = [], appendMode = false) {
   const intent = loadIntent();
-  const backRoute = intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE;
+  const backRoute = preSelected.length > 0 ? ROUTES.LEAGUE : intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.SELECT_LEAGUE;
   renderLoading('Loading artists…');
   let topArtists = await getTopArtists();
 
@@ -305,11 +305,17 @@ async function showDraft(preSelected = []) {
     }
   }
 
+  const lockedIds = appendMode ? new Set(preSelected.map(a => a.id)) : new Set();
+  const maxPicks = appendMode ? preSelected.length + 1 : 3;
   const profile = loadProfile();
   renderDraft(
     topArtists,
     (selected) => {
-      saveLineup(selected);
+      // In append mode, re-merge locked artists in case any weren't in the visible list
+      const merged = appendMode
+        ? [...preSelected.filter(a => !selected.some(s => s.id === a.id)), ...selected]
+        : selected;
+      saveLineup(merged);
       const league = getLeague();
       if (league && !league.startDate) {
         saveLeague({ ...league, startDate: new Date().toISOString() });
@@ -320,6 +326,7 @@ async function showDraft(preSelected = []) {
     preSelected,
     profile,
     () => { navigate(ROUTES.SETTINGS); },
+    { lockedIds, maxPicks },
   );
 }
 
@@ -398,7 +405,7 @@ async function showScore(lineup) {
       onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
       onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
       onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
-      onEditLineup() {},
+      onEditLineup: null,
       onDraft() {
         const spotifyReady = loadProfile()?.spotifyConnected === true;
         navigate(spotifyReady ? ROUTES.DRAFT : ROUTES.SPOTIFY_CONNECT, { next: ROUTES.DRAFT });
@@ -449,7 +456,9 @@ async function showScore(lineup) {
     onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
     onNewDraft()   { clearAll(); navigate(ROUTES.WELCOME); },
     onLogout()     { logout(); clearAll(); navigate(ROUTES.WELCOME); },
-    onEditLineup() { navigate(ROUTES.DRAFT, { preSelected: lineup }); },
+    onEditLineup: leagueStarted
+      ? (lineup.length < 2 + currentWeek ? () => navigate(ROUTES.DRAFT, { preSelected: lineup, appendMode: true }) : null)
+      : () => navigate(ROUTES.DRAFT, { preSelected: lineup }),
   });
 }
 

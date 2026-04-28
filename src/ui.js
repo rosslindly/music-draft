@@ -605,9 +605,15 @@ export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = 
 
 // --- Draft View ---
 
-export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile = null, onProfile = null) {
+export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile = null, onProfile = null, { lockedIds = new Set(), maxPicks = 3 } = {}) {
   const preSelectedIds = new Set(preSelected.map(a => a.id));
+  const isAppending = lockedIds.size > 0;
   const isEditing = preSelected.length > 0;
+  const newToAdd = maxPicks - lockedIds.size;
+  const title = isAppending ? 'Add to Your Lineup' : isEditing ? 'Edit Your Lineup' : 'Draft Your Lineup';
+  const tagline = isAppending
+    ? `Pick ${newToAdd} new artist to add to your lineup this week.`
+    : 'Draft up to 3 artists from your recent listening history.';
   app.innerHTML = `
     <div class="view view-draft">
       <div class="draft-topbar">
@@ -615,12 +621,16 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
         ${profile ? profileChipHtml(profile) : ''}
       </div>
       <div class="draft-container">
-        <h1>${isEditing ? 'Edit Your Lineup' : 'Draft Your Lineup'}</h1>
-        <p class="tagline">Draft up to 3 artists from your recent listening history.</p>
-        <p class="draft-count" id="draft-count">0 / 3 selected</p>
+        <h1>${title}</h1>
+        <p class="tagline">${tagline}</p>
+        <p class="draft-count" id="draft-count"></p>
         <ul class="artist-list" id="artist-list">
-          ${artists.map((a, i) => `
-            <li class="artist-card${preSelectedIds.has(a.id) ? ' selected' : ''}" data-id="${escapeHtml(a.id)}">
+          ${artists.map((a, i) => {
+            const isLocked = lockedIds.has(a.id);
+            const isSelected = preSelectedIds.has(a.id);
+            const cls = isLocked ? ' selected locked' : isSelected ? ' selected' : '';
+            return `
+            <li class="artist-card${cls}" data-id="${escapeHtml(a.id)}">
               <div class="artist-rank">#${i + 1}</div>
               ${artistAvatar(a.name, a.id, a.imageUrl)}
               <div class="artist-info">
@@ -632,15 +642,16 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
                   value="${escapeHtml(a.id)}"
                   data-name="${escapeHtml(a.name)}"
                   data-listeners="${a.monthlyListeners ?? ''}"
-                  ${preSelectedIds.has(a.id) ? 'checked' : ''} />
+                  ${isSelected || isLocked ? 'checked' : ''}
+                  ${isLocked ? 'disabled' : ''} />
               </div>
             </li>
-          `).join('')}
+          `}).join('')}
         </ul>
       </div>
       <div class="draft-footer">
         <span class="draft-footer-count" id="draft-footer-count"></span>
-        <button class="btn-primary" id="lock-in-btn" disabled>${isEditing ? 'Save Lineup →' : 'Lock In Lineup →'}</button>
+        <button class="btn-primary" id="lock-in-btn" disabled>${isAppending ? 'Add to Lineup →' : isEditing ? 'Save Lineup →' : 'Lock In Lineup →'}</button>
       </div>
     </div>
   `;
@@ -651,20 +662,25 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
   const lockBtn = document.getElementById('lock-in-btn');
 
   function updateCount() {
-    const n = [...cards].filter(c => c.classList.contains('selected')).length;
-    countEl.textContent = `${n} / 3 selected`;
-    footerCount.textContent = `${n} / 3 selected`;
-    lockBtn.disabled = n < 3;
+    const total = [...cards].filter(c => c.classList.contains('selected')).length;
+    const newPicks = total - lockedIds.size;
+    const text = isAppending
+      ? `${newPicks} / ${newToAdd} new pick added`
+      : `${total} / ${maxPicks} selected`;
+    countEl.textContent = text;
+    footerCount.textContent = text;
+    lockBtn.disabled = total !== maxPicks;
   }
 
   updateCount();
 
   cards.forEach(card => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('locked')) return;
       const cb = card.querySelector('input[type="checkbox"]');
       const already = card.classList.contains('selected');
       const total = [...cards].filter(c => c.classList.contains('selected')).length;
-      if (!already && total >= 3) return;
+      if (!already && total >= maxPicks) return;
       card.classList.toggle('selected', !already);
       cb.checked = !already;
       updateCount();
@@ -769,7 +785,8 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
           <div class="lh-section-header">
             <h3 class="lh-section-title">My Lineup</h3>
             <div class="lh-section-header-actions">
-              ${!leagueStarted && results.length > 0 ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
+              ${!leagueStarted && results.length > 0 && onEditLineup ? `<button class="btn-edit-lineup" id="edit-lineup-btn">Edit Lineup</button>` : ''}
+              ${leagueStarted && onEditLineup ? `<button class="btn-edit-lineup" id="edit-lineup-btn">+ Add Artist</button>` : ''}
             </div>
           </div>
           ${results.length === 0 ? `
@@ -826,8 +843,8 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
   if (onProfile) {
     document.getElementById('profile-chip-btn')?.addEventListener('click', onProfile);
   }
-  if (!leagueStarted && results.length > 0) {
-    document.getElementById('edit-lineup-btn').addEventListener('click', onEditLineup);
+  if ((!leagueStarted && results.length > 0 || leagueStarted) && onEditLineup) {
+    document.getElementById('edit-lineup-btn')?.addEventListener('click', onEditLineup);
   }
   if (results.length === 0) {
     document.getElementById('lh-draft-cta-btn').addEventListener('click', onDraft ?? onEditLineup);
