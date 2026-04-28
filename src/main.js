@@ -150,8 +150,14 @@ async function autoNavigate() {
 
 function showWelcome() {
   renderWelcome(
-    () => { saveIntent('join');   navigate(ROUTES.ONBOARDING); },
-    () => { saveIntent('create'); navigate(ROUTES.ONBOARDING); },
+    () => { saveIntent('join'); navigate(ROUTES.ONBOARDING); },
+    () => {
+      saveIntent('create');
+      const profile = loadProfile();
+      if (!profile) { navigate(ROUTES.ONBOARDING); return; }
+      const league = getLeague();
+      navigate(league ? ROUTES.LEAGUE : ROUTES.CREATE_LEAGUE);
+    },
   );
 }
 
