@@ -1,6 +1,7 @@
 // router.js — Hash-based routing
 
 import { loadProfile, getLeague, getLineup, loadIntent } from './store.js';
+import { shouldSkipDraftOnJoin } from './permissions.js';
 
 export const ROUTES = {
   WELCOME:           '#welcome',
@@ -64,11 +65,8 @@ export function autoNavigate() {
   const lineup = getLineup();
   if (!lineup) {
     const shouldPromptSpotify = loadProfile()?.spotifyConnected === undefined;
-    if (league.role === 'member') {
-      navigate(shouldPromptSpotify ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
-    } else {
-      navigate(shouldPromptSpotify ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
-    }
+    const defaultPost = shouldSkipDraftOnJoin(league.role) ? ROUTES.LEAGUE : ROUTES.DRAFT;
+    navigate(shouldPromptSpotify ? ROUTES.SPOTIFY_CONNECT : defaultPost);
     return;
   }
 

@@ -1,5 +1,7 @@
 // ui.js — View rendering
 
+import { canManageLeague } from './permissions.js';
+
 const app = document.getElementById('app');
 
 // --- Helpers ---
@@ -727,7 +729,7 @@ function buildArtistStatsRows(artistId, snapshots) {
 }
 
 export function renderScore({ results, totalPoints, standings, league, role, leagueStarted, snapshots, onNewDraft, onLogout, onEditLineup, onDraft, profile, onProfile, onLeagueSettings }) {
-  const isCommissioner = role === 'commissioner';
+  const isCommissioner = canManageLeague(role);
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
   app.innerHTML = `

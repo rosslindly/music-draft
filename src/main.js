@@ -16,6 +16,7 @@ import {
   withImages,
 } from './store.js';
 import { ROUTES, navigate, renderRoute, autoNavigate, registerRoutes, markInitialLoadDone } from './router.js';
+import { canManageLeague, canEditLineup, canAddWeeklyArtist, shouldSkipDraftOnJoin } from './permissions.js';
 import {
   renderWelcome, renderEnterInviteCode, renderOnboarding, renderCreateLeague,
   renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry,
@@ -284,7 +285,7 @@ async function showScore(lineup) {
       leagueStarted: false,
       profile,
       onProfile() { navigate(ROUTES.SETTINGS); },
-      onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
+      onLeagueSettings: canManageLeague(role) ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
       onNewDraft() { clearAll(); navigate(ROUTES.WELCOME); },
       onLogout()   { logout(); clearAll(); navigate(ROUTES.WELCOME); },
       onEditLineup: null,
@@ -335,12 +336,14 @@ async function showScore(lineup) {
     snapshots,
     profile,
     onProfile() { navigate(ROUTES.SETTINGS); },
-    onLeagueSettings: role === 'commissioner' ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
+    onLeagueSettings: canManageLeague(role) ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
     onNewDraft()   { clearAll(); navigate(ROUTES.WELCOME); },
     onLogout()     { logout(); clearAll(); navigate(ROUTES.WELCOME); },
-    onEditLineup: leagueStarted
-      ? (lineup.length < 2 + currentWeek ? () => navigate(ROUTES.DRAFT, { preSelected: lineup, appendMode: true }) : null)
-      : () => navigate(ROUTES.DRAFT, { preSelected: lineup }),
+    onEditLineup: canAddWeeklyArtist(leagueStarted, lineup.length, currentWeek)
+      ? () => navigate(ROUTES.DRAFT, { preSelected: lineup, appendMode: true })
+      : canEditLineup(leagueStarted, lineup.length)
+        ? () => navigate(ROUTES.DRAFT, { preSelected: lineup })
+        : null,
   });
 }
 
@@ -397,7 +400,7 @@ if (oauthCode) {
       saveProfile({ ...loadProfile(), spotifyConnected: true });
       history.replaceState({}, '', '/');
       markInitialLoadDone();
-      const postOAuthRoute = localStorage.getItem('md_oauth_next') ?? (getLeague()?.role === 'member' ? ROUTES.LEAGUE : ROUTES.DRAFT);
+      const postOAuthRoute = localStorage.getItem('md_oauth_next') ?? (shouldSkipDraftOnJoin(getLeague()?.role) ? ROUTES.LEAGUE : ROUTES.DRAFT);
       localStorage.removeItem('md_oauth_next');
       navigate(postOAuthRoute);
     })
