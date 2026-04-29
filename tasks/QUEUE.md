@@ -13,7 +13,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 
 ## Pre-Multiplayer Alpha (do before inviting friends)
 
-- [~] supabase-setup.md             Migrate localStorage to Supabase Postgres backend
+- [x] supabase-setup.md             Migrate localStorage to Supabase Postgres backend
 - [x] spotify-oauth.md              Implement OAuth2 PKCE flow for Spotify login
 
 ## Backlog
