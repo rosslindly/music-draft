@@ -3,7 +3,7 @@
 -- Users (populated from Spotify OAuth + onboarding)
 create table users (
   id                uuid primary key default gen_random_uuid(),
-  spotify_id        text unique not null,
+  spotify_id        text unique,
   handle            text not null,
   avatar_url        text,
   spotify_connected boolean not null default false,

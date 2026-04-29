@@ -1,27 +1,137 @@
-// store.js — All localStorage persistence and derived state
+// store.js — In-memory state backed by Supabase
+//
+// Reads are synchronous (from in-memory state, populated at boot).
+// Writes update in-memory state immediately and fire async Supabase persists.
+//
+// Keys that remain in localStorage (not app data):
+//   md_user_id     — device-level user identity (UUID)
+//   md_intent      — transient create/join nav state
+//   md_top_artists — Spotify API cache
+//   md_spotify_*   — Spotify session tokens (managed by session.js)
 
-const PROFILE_KEY   = 'md_profile';
+import * as db from './db.js';
+
+const USER_ID_KEY   = 'md_user_id';
 const INTENT_KEY    = 'md_intent';
-const LINEUP_KEY    = 'fantasy_lineup';
-const LEAGUE_KEY    = 'md_league';
-const SNAPSHOTS_KEY = 'md_snapshots';
 const TOP_ARTISTS_KEY = 'md_top_artists';
+
+// ── Device identity ───────────────────────────────────────────────────────────
+
+export function getUserId() {
+  let id = localStorage.getItem(USER_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(USER_ID_KEY, id);
+  }
+  return id;
+}
+
+// ── In-memory state ───────────────────────────────────────────────────────────
+
+const _state = {
+  profile:   null,  // { handle, photo, spotifyConnected }
+  league:    null,  // { id, name, inviteCode, role, admin, startDate, scheduledStartDate, ... }
+  lineup:    null,  // [{ id, name, monthlyListeners, imageUrl, savedAt }]
+  snapshots: [],    // [{ week, savedAt, artists }]
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+export async function bootStore() {
+  const userId = getUserId();
+
+  const user = await db.dbGetUser(userId);
+  if (user) {
+    _state.profile = {
+      handle: user.handle,
+      photo: user.avatar_url,
+      spotifyConnected: user.spotify_connected,
+    };
+  }
+
+  const leagueRow = await db.dbGetLeagueForUser(userId);
+  if (leagueRow) {
+    _state.league = _mapLeague(leagueRow);
+    _state.lineup = await db.dbGetLineup(leagueRow.id, userId);
+    _state.snapshots = await db.dbGetSnapshots(leagueRow.id, userId);
+  }
+}
+
+function _mapLeague(row) {
+  return {
+    id: row.id,
+    name: row.name,
+    inviteCode: row.invite_code,
+    role: row.role,
+    admin: _state.profile?.handle ?? row.admin_id,
+    startDate: row.start_date ?? null,
+    scheduledStartDate: row.scheduled_start_date ?? null,
+    durationWeeks: row.duration_weeks ?? null,
+    teamCount: 1, // computed from members — hardcoded for solo alpha
+    maxTeams: row.max_teams ?? 10,
+    createdAt: row.created_at,
+  };
+}
 
 // ── Profile ───────────────────────────────────────────────────────────────────
 
-export function saveProfile(profile) { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
-export function loadProfile()        { const r = localStorage.getItem(PROFILE_KEY); return r ? JSON.parse(r) : null; }
+export function loadProfile() { return _state.profile; }
 
-// ── Intent ────────────────────────────────────────────────────────────────────
+export function saveProfile(profile) {
+  _state.profile = profile;
+  db.dbUpsertUser({
+    id: getUserId(),
+    handle: profile.handle,
+    photo: profile.photo,
+    spotifyConnected: profile.spotifyConnected ?? false,
+  }).catch(err => console.error('[store] saveProfile:', err));
+}
+
+// ── Intent (transient nav state — stays in localStorage) ──────────────────────
 
 export function saveIntent(intent) { localStorage.setItem(INTENT_KEY, intent); }
 export function loadIntent()       { return localStorage.getItem(INTENT_KEY); }
 
 // ── League ────────────────────────────────────────────────────────────────────
 
-export function saveLeague(league) { localStorage.setItem(LEAGUE_KEY, JSON.stringify(league)); }
-export function getLeague()        { const raw = localStorage.getItem(LEAGUE_KEY); return raw ? JSON.parse(raw) : null; }
-export function clearLeague()      { localStorage.removeItem(LEAGUE_KEY); }
+export function getLeague() { return _state.league; }
+export function clearLeague() { _state.league = null; }
+
+export function saveLeague(league) {
+  const userId = getUserId();
+  const existing = _state.league;
+
+  if (!existing) {
+    // New league — create in DB
+    const leagueId = crypto.randomUUID();
+    const inviteCode = league.inviteCode ?? _generateInviteCode();
+    _state.league = { ...league, id: leagueId, inviteCode };
+    db.dbCreateLeague({
+      id: leagueId,
+      name: league.name,
+      inviteCode,
+      adminId: userId,
+      scheduledStartDate: league.scheduledStartDate ?? null,
+      durationWeeks: league.durationWeeks ?? null,
+      maxTeams: league.maxTeams ?? league.maxParticipants ?? 10,
+    })
+    .then(() => db.dbAddLeagueMember(leagueId, userId, league.role ?? 'commissioner'))
+    .catch(err => console.error('[store] createLeague:', err));
+  } else {
+    // Update existing league
+    _state.league = { ...existing, ...league };
+    db.dbUpdateLeague(existing.id, {
+      name: league.name,
+      startDate: league.startDate,
+      scheduledStartDate: league.scheduledStartDate,
+    }).catch(err => console.error('[store] updateLeague:', err));
+  }
+}
+
+function _generateInviteCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+}
 
 // ── Lineup ────────────────────────────────────────────────────────────────────
 
@@ -35,36 +145,51 @@ export function saveLineup(artists) {
     savedAt,
   }));
   console.log('[store] saving lineup:', lineup.map(a => `${a.name}: ${a.monthlyListeners}`));
-  localStorage.setItem(LINEUP_KEY, JSON.stringify(lineup));
+  _state.lineup = lineup;
+  const league = _state.league;
+  if (league) {
+    db.dbSaveLineup(league.id, getUserId(), lineup)
+      .catch(err => console.error('[store] saveLineup:', err));
+  }
 }
 
-export function getLineup()   { const raw = localStorage.getItem(LINEUP_KEY); return raw ? JSON.parse(raw) : null; }
-export function clearLineup() { localStorage.removeItem(LINEUP_KEY); }
+export function getLineup()   { return _state.lineup; }
+export function clearLineup() { _state.lineup = null; }
 
 // ── Snapshots ─────────────────────────────────────────────────────────────────
 
 export function saveSnapshot(weekNumber, artists) {
-  const snapshots = getSnapshots().filter(s => s.week !== weekNumber);
-  snapshots.push({
+  const snapshot = {
     week: weekNumber,
     savedAt: new Date().toISOString(),
     artists: artists.map(({ id, name, monthlyListeners }) => ({ id, name, monthlyListeners })),
-  });
-  localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(snapshots));
+  };
+  _state.snapshots = _state.snapshots.filter(s => s.week !== weekNumber);
+  _state.snapshots.push(snapshot);
+  const league = _state.league;
+  if (league) {
+    db.dbSaveSnapshot(league.id, getUserId(), weekNumber, snapshot.artists)
+      .catch(err => console.error('[store] saveSnapshot:', err));
+  }
 }
 
-export function getSnapshots()   { const raw = localStorage.getItem(SNAPSHOTS_KEY); return raw ? JSON.parse(raw) : []; }
-export function clearSnapshots() { localStorage.removeItem(SNAPSHOTS_KEY); }
+export function getSnapshots()   { return _state.snapshots; }
+export function clearSnapshots() { _state.snapshots = []; }
 
 // ── Clear all ─────────────────────────────────────────────────────────────────
+// Clears in-memory state and Spotify session. md_user_id is preserved so the
+// user's DB records can be reloaded on next boot. Data in Supabase is not deleted.
+// TODO: for a true "start over", delete DB records or generate a new user UUID.
 
 export function clearAll() {
-  localStorage.removeItem(LINEUP_KEY);
-  localStorage.removeItem(LEAGUE_KEY);
-  localStorage.removeItem(SNAPSHOTS_KEY);
-  localStorage.removeItem(PROFILE_KEY);
-  localStorage.removeItem(INTENT_KEY);
+  _state.profile   = null;
+  _state.league    = null;
+  _state.lineup    = null;
+  _state.snapshots = [];
+  localStorage.removeItem('md_spotify_tokens');
+  localStorage.removeItem('md_pkce_verifier');
   localStorage.removeItem(TOP_ARTISTS_KEY);
+  localStorage.removeItem(INTENT_KEY);
 }
 
 // ── Time / week utilities ─────────────────────────────────────────────────────
@@ -80,12 +205,11 @@ export function getCurrentWeekNumber(startDate) {
 export function hasSubmittedThisWeek(startDate) {
   const week = getCurrentWeekNumber(startDate);
   if (week == null) return false;
-  return getSnapshots().some(s => s.week === week);
+  return _state.snapshots.some(s => s.week === week);
 }
 
 // ── Image enrichment ──────────────────────────────────────────────────────────
 
-// Enrich a lineup with imageUrl from the cached top artists pool.
 export function withImages(lineup) {
   if (!lineup) return lineup;
   const cached = localStorage.getItem(TOP_ARTISTS_KEY);

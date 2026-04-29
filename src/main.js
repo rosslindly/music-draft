@@ -6,6 +6,7 @@ import { MOCK_MEMBERS } from './fixtures.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
 import { scoreSeason } from './scoring.js';
 import {
+  bootStore,
   saveProfile, loadProfile,
   saveIntent, loadIntent,
   saveLeague, getLeague,
@@ -388,40 +389,46 @@ registerRoutes({
 
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
-const urlParams = new URLSearchParams(window.location.search);
-const oauthCode = urlParams.get('code');
-const oauthError = urlParams.get('error');
+(async () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const oauthCode = urlParams.get('code');
+  const oauthError = urlParams.get('error');
 
-if (oauthCode) {
-  // Returning from Spotify OAuth — exchange code for tokens
-  renderLoading('Connecting to Spotify…');
-  handleCallback(oauthCode)
-    .then(() => {
+  // Load all user data from Supabase into memory before rendering anything.
+  // During OAuth redirects this runs before rendering the loading screen intentionally —
+  // it's fast enough on local/cloud Supabase that it's not noticeable.
+  await bootStore();
+
+  if (oauthCode) {
+    // Returning from Spotify OAuth — exchange code for tokens
+    renderLoading('Connecting to Spotify…');
+    try {
+      await handleCallback(oauthCode);
       saveProfile({ ...loadProfile(), spotifyConnected: true });
       history.replaceState({}, '', '/');
       markInitialLoadDone();
       const postOAuthRoute = localStorage.getItem('md_oauth_next') ?? (shouldSkipDraftOnJoin(getLeague()?.role) ? ROUTES.LEAGUE : ROUTES.DRAFT);
       localStorage.removeItem('md_oauth_next');
       navigate(postOAuthRoute);
-    })
-    .catch((err) => {
+    } catch (err) {
       console.error('Spotify OAuth callback failed:', err);
       history.replaceState({}, '', '/');
       autoNavigate();
-    });
-} else if (oauthError) {
-  // User denied Spotify access on the Spotify auth page
-  saveProfile({ ...loadProfile(), spotifyConnected: false });
-  history.replaceState({}, '', '/');
-  autoNavigate();
-} else {
-  // Normal page load — deep-link or auto-navigate
-  const initialHash = location.hash;
-  if (initialHash && Object.values(ROUTES).includes(initialHash)) {
-    history.replaceState({ route: initialHash }, '', initialHash);
-    markInitialLoadDone();
-    renderRoute(initialHash, {});
-  } else {
+    }
+  } else if (oauthError) {
+    // User denied Spotify access on the Spotify auth page
+    saveProfile({ ...loadProfile(), spotifyConnected: false });
+    history.replaceState({}, '', '/');
     autoNavigate();
+  } else {
+    // Normal page load — deep-link or auto-navigate
+    const initialHash = location.hash;
+    if (initialHash && Object.values(ROUTES).includes(initialHash)) {
+      history.replaceState({ route: initialHash }, '', initialHash);
+      markInitialLoadDone();
+      renderRoute(initialHash, {});
+    } else {
+      autoNavigate();
+    }
   }
-}
+})();
