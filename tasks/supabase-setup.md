@@ -9,22 +9,32 @@ Do this after the solo alpha is complete and validated end-to-end. The localStor
 ## Schema (draft)
 
 ```sql
--- Users (populated from Spotify OAuth profile)
-users (id uuid pk, spotify_id text unique, handle text, display_name text, avatar_url text, created_at timestamptz)
+-- Users (populated from Spotify OAuth + onboarding)
+-- handle is the primary display name; spotify_connected tracks OAuth status
+users (id uuid pk, spotify_id text unique, handle text, avatar_url text, spotify_connected boolean default false, created_at timestamptz)
 
 -- Leagues
-leagues (id uuid pk, name text, invite_code text unique, admin_id uuid fk users, start_date date, created_at timestamptz)
+-- start_date: when the draft was first locked in (set on first saveLineup)
+-- scheduled_start_date: the user-chosen date the league competition begins
+-- max_teams: max number of participants (was maxParticipants in UI)
+leagues (id uuid pk, name text, invite_code text unique, admin_id uuid fk users, start_date timestamptz, scheduled_start_date date, duration_weeks int, max_teams int, created_at timestamptz)
 
--- League membership
-league_members (league_id uuid fk leagues, user_id uuid fk users, joined_at timestamptz, primary key (league_id, user_id))
+-- League membership — role is 'commissioner' or 'member'
+league_members (league_id uuid fk leagues, user_id uuid fk users, role text not null, joined_at timestamptz, primary key (league_id, user_id))
 
 -- Drafted lineups (one per user per league)
+-- artists jsonb shape: [{ id, name, monthlyListeners, imageUrl, savedAt }]
 lineups (id uuid pk, league_id uuid fk leagues, user_id uuid fk users, artists jsonb, created_at timestamptz, updated_at timestamptz)
 
 -- Weekly listener snapshots
-listener_snapshots (id uuid pk, league_id uuid fk leagues, user_id uuid fk users, week_number int, recorded_at timestamptz, artists jsonb)
 -- artists jsonb shape: [{ id, name, monthlyListeners }]
+listener_snapshots (id uuid pk, league_id uuid fk leagues, user_id uuid fk users, week_number int, recorded_at timestamptz, artists jsonb)
 ```
+
+## Notes on what stays in localStorage
+- `md_top_artists` — Spotify API cache; not user data, stays in localStorage
+- `md_oauth_next` — transient post-OAuth navigation state; stays in localStorage
+- `md_pkce_verifier` / `md_spotify_tokens` — Spotify session tokens; stay in localStorage (session.js unchanged for now)
 
 ## Inputs
 - `src/scoring.js` — replace localStorage helpers with Supabase client calls
@@ -49,9 +59,9 @@ listener_snapshots (id uuid pk, league_id uuid fk leagues, user_id uuid fk users
 - Commit: `feat: migrate localStorage to Supabase backend`
 
 ## Dependencies
-- All solo alpha tasks complete (`league-create`, `monthly-listeners-model`, `listener-baseline-entry`, `weekly-update-prompt`, `weekly-score-calculation`)
-- `localstorage-export.md` complete (use export to seed Supabase with existing solo alpha data)
-- `spotify-oauth.md` should be done in parallel or just before (Supabase Auth + Spotify provider)
+- All solo alpha tasks complete (`league-create`, `monthly-listeners-model`, `listener-baseline-entry`, `weekly-update-prompt`, `weekly-score-calculation`) ✓
+- `localstorage-export.md` — skipped; superseded by Supabase
+- `spotify-oauth.md` ✓
 
 ## Out of Scope
 - Row-level security policies (add before production, not required for closed alpha)
