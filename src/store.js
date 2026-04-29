@@ -107,6 +107,15 @@ export function loadIntent()       { return localStorage.getItem(INTENT_KEY); }
 export function getLeague() { return _state.league; }
 export function clearLeague() { _state.league = null; }
 
+export async function loadMostRecentLeague(role = 'commissioner') {
+  const row = await db.dbGetMostRecentLeague();
+  if (!row) return null;
+  _state.league = _mapLeague({ ...row, role });
+  await db.dbAddLeagueMember(row.id, getUserId(), role)
+    .catch(err => console.error('[store] loadMostRecentLeague:', err));
+  return _state.league;
+}
+
 export function saveLeague(league) {
   const userId = getUserId();
   const existing = _state.league;
@@ -185,13 +194,19 @@ export async function loadOtherMembers() {
     (snapshotsByUserId[s.user_id] ??= []).push({ week: s.week_number, artists: s.artists });
   }
   const myId = getUserId();
-  return members
-    .filter(m => m.userId !== myId)
-    .map(m => {
-      const lineup = lineupByUserId[m.userId] ?? [];
-      const { totalPoints } = scoreSeason(snapshotsByUserId[m.userId] ?? []);
-      return { handle: m.handle, picks: lineup, totalPoints };
-    });
+  const otherMembers = members.filter(m => m.userId !== myId);
+  const allArtistIds = [...new Set(otherMembers.flatMap(m => (lineupByUserId[m.userId] ?? []).map(a => a.id)))];
+  const artistMeta = await db.dbGetArtistsByIds(allArtistIds);
+  const metaById = Object.fromEntries(artistMeta.map(a => [a.id, a]));
+  return otherMembers.map(m => {
+    const lineup = (lineupByUserId[m.userId] ?? []).map(a => ({
+      ...a,
+      imageUrl: a.imageUrl ?? metaById[a.id]?.imageUrl ?? null,
+      spotifyUrl: a.spotifyUrl ?? metaById[a.id]?.spotifyUrl ?? null,
+    }));
+    const { totalPoints } = scoreSeason(snapshotsByUserId[m.userId] ?? []);
+    return { handle: m.handle, picks: lineup, totalPoints };
+  });
 }
 
 export function setPendingLeague(leagueData) {
@@ -210,11 +225,12 @@ export async function commitJoin() {
 
 export function saveLineup(artists) {
   const savedAt = new Date().toISOString();
-  const lineup = artists.map(({ id, name, monthlyListeners, imageUrl }) => ({
+  const lineup = artists.map(({ id, name, monthlyListeners, imageUrl, spotifyUrl }) => ({
     id,
     name,
     monthlyListeners: typeof monthlyListeners === 'number' && !isNaN(monthlyListeners) ? monthlyListeners : null,
     imageUrl: imageUrl ?? null,
+    spotifyUrl: spotifyUrl ?? null,
     savedAt,
   }));
   console.log('[store] saving lineup:', lineup.map(a => `${a.name}: ${a.monthlyListeners}`));
@@ -223,6 +239,8 @@ export function saveLineup(artists) {
   if (league) {
     db.dbSaveLineup(league.id, getUserId(), lineup)
       .catch(err => console.error('[store] saveLineup:', err));
+    db.dbUpsertArtists(lineup)
+      .catch(err => console.error('[store] dbUpsertArtists:', err));
   }
 }
 

@@ -81,6 +81,16 @@ export async function dbGetAllSnapshots(leagueId) {
   return data ?? [];
 }
 
+export async function dbGetMostRecentLeague() {
+  const { data } = await supabase
+    .from('leagues')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
 export async function dbGetLeagueByInviteCode(code) {
   const { data: league } = await supabase
     .from('leagues')
@@ -113,6 +123,36 @@ export async function dbGetLeagueForUser(userId) {
     .maybeSingle();
   if (!data) return null;
   return { ...data.leagues, role: data.role };
+}
+
+// ── Artists ───────────────────────────────────────────────────────────────────
+
+export async function dbUpsertArtists(artists) {
+  if (!artists.length) return;
+  const { error } = await supabase.from('artists').upsert(
+    artists.map(a => ({
+      id: a.id,
+      name: a.name,
+      image_url: a.imageUrl ?? null,
+      spotify_url: a.spotifyUrl ?? null,
+      updated_at: new Date().toISOString(),
+    }))
+  );
+  if (error) throw error;
+}
+
+export async function dbGetArtistsByIds(ids) {
+  if (!ids.length) return [];
+  const { data } = await supabase
+    .from('artists')
+    .select('id, name, image_url, spotify_url')
+    .in('id', ids);
+  return (data ?? []).map(a => ({
+    id: a.id,
+    name: a.name,
+    imageUrl: a.image_url,
+    spotifyUrl: a.spotify_url,
+  }));
 }
 
 // ── Lineups ───────────────────────────────────────────────────────────────────

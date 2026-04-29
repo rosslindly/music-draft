@@ -8,7 +8,7 @@ import {
   bootStore,
   saveProfile, loadProfile,
   saveIntent, loadIntent,
-  saveLeague, getLeague,
+  saveLeague, getLeague, loadMostRecentLeague,
   lookupLeague, setPendingLeague, commitJoin,
   saveLineup, getLineup,
   saveSnapshot, getSnapshots,
@@ -41,12 +41,12 @@ function generateHandle() {
 function showWelcome() {
   renderWelcome(
     () => { saveIntent('join'); navigate(ROUTES.ENTER_INVITE_CODE); },
-    () => {
+    async () => {
       saveIntent('create');
+      const league = getLeague() ?? await loadMostRecentLeague('commissioner');
+      if (league) { navigate(ROUTES.LEAGUE); return; }
       const profile = loadProfile();
-      if (!profile) { navigate(ROUTES.ONBOARDING); return; }
-      const league = getLeague();
-      navigate(league ? ROUTES.LEAGUE : ROUTES.CREATE_LEAGUE);
+      navigate(profile ? ROUTES.CREATE_LEAGUE : ROUTES.ONBOARDING);
     },
   );
 }
@@ -71,7 +71,8 @@ function showOnboarding() {
     async (profile) => {
       await saveProfile(profile);
       if (intent === 'create') {
-        navigate(ROUTES.CREATE_LEAGUE);
+        const league = getLeague() ?? await loadMostRecentLeague('commissioner');
+        navigate(league ? ROUTES.LEAGUE : ROUTES.CREATE_LEAGUE);
       } else if (getLeague()) {
         await commitJoin();
         navigate(loadProfile()?.spotifyConnected === undefined ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
