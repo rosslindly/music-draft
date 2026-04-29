@@ -26,6 +26,15 @@ export function getUserId() {
   return id;
 }
 
+export function resetUserId() {
+  const id = crypto.randomUUID();
+  localStorage.setItem(USER_ID_KEY, id);
+  _state.profile = null;
+  _state.league = null;
+  _state.lineup = null;
+  _state.snapshots = [];
+}
+
 // ── In-memory state ───────────────────────────────────────────────────────────
 
 const _state = {
@@ -79,7 +88,7 @@ export function loadProfile() { return _state.profile; }
 
 export function saveProfile(profile) {
   _state.profile = profile;
-  db.dbUpsertUser({
+  return db.dbUpsertUser({
     id: getUserId(),
     handle: profile.handle,
     photo: profile.photo,
@@ -161,12 +170,16 @@ export async function lookupLeague(code) {
   };
 }
 
-export async function joinLeague(leagueData) {
-  const userId = getUserId();
+export function setPendingLeague(leagueData) {
   _state.league = { ...leagueData, role: 'member' };
   _state.lineup = null;
   _state.snapshots = [];
-  await db.dbAddLeagueMember(leagueData.id, userId, 'member');
+}
+
+export async function commitJoin() {
+  const leagueId = _state.league?.id;
+  if (!leagueId) return;
+  await db.dbAddLeagueMember(leagueId, getUserId(), 'member');
 }
 
 // ── Lineup ────────────────────────────────────────────────────────────────────

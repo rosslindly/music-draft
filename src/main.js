@@ -10,10 +10,10 @@ import {
   saveProfile, loadProfile,
   saveIntent, loadIntent,
   saveLeague, getLeague,
-  lookupLeague, joinLeague,
+  lookupLeague, setPendingLeague, commitJoin,
   saveLineup, getLineup,
   saveSnapshot, getSnapshots,
-  clearAll,
+  clearAll, resetUserId,
   getCurrentWeekNumber,
   withImages,
 } from './store.js';
@@ -68,11 +68,12 @@ function showOnboarding() {
   const defaultHandle = anonymous ? generateHandle() : '';
 
   renderOnboarding(
-    (profile) => {
-      saveProfile(profile);
+    async (profile) => {
+      await saveProfile(profile);
       if (intent === 'create') {
         navigate(ROUTES.CREATE_LEAGUE);
       } else if (getLeague()) {
+        await commitJoin();
         navigate(loadProfile()?.spotifyConnected === undefined ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
       } else {
         navigate(ROUTES.ENTER_INVITE_CODE);
@@ -105,7 +106,8 @@ function showSelectLeague(leagueData) {
   renderLeague(
     leagueData,
     async () => {
-      await joinLeague(leagueData);
+      resetUserId();
+      setPendingLeague(leagueData);
       navigate(ROUTES.ONBOARDING);
     },
     () => { navigate(ROUTES.ENTER_INVITE_CODE); },
