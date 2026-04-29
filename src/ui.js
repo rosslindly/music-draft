@@ -57,6 +57,11 @@ function fmtListeners(n) {
   return n.toLocaleString();
 }
 
+function fmtPts(n) {
+  const num = Number(n);
+  return Number.isInteger(num) ? String(num) : num.toFixed(2);
+}
+
 function getGrade(pts) {
   if (pts >= 12) return { grade: 'S', cls: 'grade-s', headline: 'Perfect Scout!' };
   if (pts >= 9)  return { grade: 'A', cls: 'grade-a', headline: 'Sharp Ear' };
@@ -769,7 +774,7 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
           </div>
           <div class="lh-score-block">
             ${leagueStarted
-              ? `<div class="lh-score-pts">${totalPoints}<span class="lh-score-pts-label"> pts</span></div>
+              ? `<div class="lh-score-pts">${fmtPts(totalPoints)}<span class="lh-score-pts-label"> pts</span></div>
             <div class="lh-score-rank">#${userRank} of ${standings.length}</div>`
               : league.daysUntilStart > 0
                 ? `<div class="lh-score-pts lh-score-pts--pending">—</div>
@@ -833,7 +838,7 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
               <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
                 <span class="standings-rank">${leagueStarted ? i + 1 : '—'}</span>
                 <span class="standings-name">${escapeHtml(entry.handle)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
-                <span class="standings-pts${leagueStarted ? '' : ' standings-pts--pending'}">${leagueStarted ? `${entry.totalPoints} <span class="standings-pts-label">pts</span>` : '—'}</span>
+                <span class="standings-pts${leagueStarted ? '' : ' standings-pts--pending'}">${leagueStarted ? `${fmtPts(entry.totalPoints)} <span class="standings-pts-label">pts</span>` : '—'}</span>
               </li>
             `).join('')}
           </ul>
