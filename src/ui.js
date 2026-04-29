@@ -169,10 +169,18 @@ export function renderEnterInviteCode(onContinue, onBack) {
 
   document.getElementById('invite-back-btn').addEventListener('click', onBack);
 
-  continueBtn.addEventListener('click', () => {
+  continueBtn.addEventListener('click', async () => {
     const code = codeInput.value.trim();
     if (code.length < 4) return;
-    onContinue(code);
+    continueBtn.disabled = true;
+    continueBtn.textContent = 'Looking up…';
+    try {
+      await onContinue(code);
+    } catch {
+      errorHint.style.display = '';
+      continueBtn.disabled = false;
+      continueBtn.textContent = 'Find League →';
+    }
   });
 }
 

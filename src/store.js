@@ -133,6 +133,42 @@ function _generateInviteCode() {
   return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
 }
 
+// ── Join league ───────────────────────────────────────────────────────────────
+
+export async function lookupLeague(code) {
+  const row = await db.dbGetLeagueByInviteCode(code);
+  if (!row) return null;
+
+  const scheduledStart = row.scheduled_start_date ? new Date(row.scheduled_start_date) : null;
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+  const daysUntilStart = scheduledStart != null
+    ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))
+    : '—';
+
+  return {
+    id: row.id,
+    name: row.name,
+    inviteCode: row.invite_code,
+    admin: row.adminHandle ?? row.admin_id,
+    daysUntilStart,
+    teamCount: row.memberCount,
+    maxTeams: row.max_teams ?? 10,
+    startDate: row.start_date ?? null,
+    scheduledStartDate: row.scheduled_start_date ?? null,
+    durationWeeks: row.duration_weeks ?? null,
+    createdAt: row.created_at,
+  };
+}
+
+export async function joinLeague(leagueData) {
+  const userId = getUserId();
+  _state.league = { ...leagueData, role: 'member' };
+  _state.lineup = null;
+  _state.snapshots = [];
+  await db.dbAddLeagueMember(leagueData.id, userId, 'member');
+}
+
 // ── Lineup ────────────────────────────────────────────────────────────────────
 
 export function saveLineup(artists) {

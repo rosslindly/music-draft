@@ -52,6 +52,28 @@ export async function dbAddLeagueMember(leagueId, userId, role) {
   if (error) throw error;
 }
 
+export async function dbGetLeagueByInviteCode(code) {
+  const { data: league } = await supabase
+    .from('leagues')
+    .select('*')
+    .eq('invite_code', code.toUpperCase())
+    .maybeSingle();
+  if (!league) return null;
+
+  const { count } = await supabase
+    .from('league_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('league_id', league.id);
+
+  const { data: adminUser } = await supabase
+    .from('users')
+    .select('handle')
+    .eq('id', league.admin_id)
+    .maybeSingle();
+
+  return { ...league, memberCount: count ?? 0, adminHandle: adminUser?.handle ?? null };
+}
+
 export async function dbGetLeagueForUser(userId) {
   const { data } = await supabase
     .from('league_members')

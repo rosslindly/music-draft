@@ -10,7 +10,8 @@ import {
   saveProfile, loadProfile,
   saveIntent, loadIntent,
   saveLeague, getLeague,
-  saveLineup, getLineup, clearLineup,
+  lookupLeague, joinLeague,
+  saveLineup, getLineup,
   saveSnapshot, getSnapshots,
   clearAll,
   getCurrentWeekNumber,
@@ -35,18 +36,6 @@ function generateHandle() {
   return `${a}${n}${num}`;
 }
 
-// ── Mock join league data ─────────────────────────────────────────────────────
-
-const MOCK_JOIN_LEAGUE = {
-  name: 'Indie Tastemakers',
-  admin: 'Jordan K.',
-  daysUntilStart: 3,
-  teamCount: 7,
-  maxTeams: 10,
-  durationWeeks: 8,
-  scheduledStartDate: (() => { const d = new Date(); d.setDate(d.getDate() + 3); return d.toISOString().split('T')[0]; })(),
-};
-
 // ── Screen functions ──────────────────────────────────────────────────────────
 
 function showWelcome() {
@@ -64,9 +53,10 @@ function showWelcome() {
 
 function showEnterInviteCode() {
   renderEnterInviteCode(
-    (_code) => {
-      // Mock: any valid-format code resolves to the mock league
-      navigate(ROUTES.SELECT_LEAGUE);
+    async (code) => {
+      const leagueData = await lookupLeague(code);
+      if (!leagueData) throw new Error('not found');
+      navigate(ROUTES.SELECT_LEAGUE, { leagueData });
     },
     () => { navigate(ROUTES.WELCOME); },
   );
@@ -110,23 +100,12 @@ function showCreateLeague() {
   );
 }
 
-function showSelectLeague() {
+function showSelectLeague(leagueData) {
+  if (!leagueData) { navigate(ROUTES.ENTER_INVITE_CODE); return; }
   renderLeague(
-    MOCK_JOIN_LEAGUE,
-    () => {
-      saveLeague({
-        name: MOCK_JOIN_LEAGUE.name,
-        role: 'member',
-        inviteCode: 'INDIE1',
-        createdAt: new Date().toISOString(),
-        startDate: null,
-        scheduledStartDate: MOCK_JOIN_LEAGUE.scheduledStartDate,
-        admin: MOCK_JOIN_LEAGUE.admin,
-        teamCount: MOCK_JOIN_LEAGUE.teamCount,
-        maxTeams: MOCK_JOIN_LEAGUE.maxTeams,
-        durationWeeks: MOCK_JOIN_LEAGUE.durationWeeks,
-      });
-      clearLineup();
+    leagueData,
+    async () => {
+      await joinLeague(leagueData);
       navigate(ROUTES.ONBOARDING);
     },
     () => { navigate(ROUTES.ENTER_INVITE_CODE); },
@@ -377,7 +356,7 @@ registerRoutes({
   [ROUTES.ENTER_INVITE_CODE]: () => showEnterInviteCode(),
   [ROUTES.ONBOARDING]:        () => showOnboarding(),
   [ROUTES.CREATE_LEAGUE]:     () => showCreateLeague(),
-  [ROUTES.SELECT_LEAGUE]:     () => showSelectLeague(),
+  [ROUTES.SELECT_LEAGUE]:     (state) => showSelectLeague(state.leagueData),
   [ROUTES.SPOTIFY_CONNECT]:   (state) => showSpotifyConnect(state),
   [ROUTES.DRAFT]:             (state) => showDraft(state.preSelected ?? [], state.appendMode ?? false),
   [ROUTES.BASELINE]:          () => showBaselineEntry(withImages(getLineup())),
