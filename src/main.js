@@ -1,41 +1,26 @@
-// main.js — Entry point
+// main.js — Screen orchestration and bootstrap
+
 import { login, handleCallback, logout } from './session.js';
-import { getTopArtists, MOCK_MEMBERS, clearTopArtistsCache } from './data.js';
+import { getTopArtists } from './data.js';
+import { MOCK_MEMBERS } from './fixtures.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
-import { saveLineup, getLineup, clearLineup, scoreSeason, saveLeague, getLeague, clearLeague, saveSnapshot, getSnapshots, clearSnapshots, getCurrentWeekNumber } from './scoring.js';
-import { renderWelcome, renderEnterInviteCode, renderOnboarding, renderCreateLeague, renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry, renderWeeklyUpdate, renderScore, renderLeagueSettings, renderSettings, renderLoading } from './ui.js';
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-// Enrich a lineup array with imageUrl from the cached top artists, so screens
-// that load from localStorage still get images even if the lineup was saved
-// before imageUrl was persisted.
-function withImages(lineup) {
-  if (!lineup) return lineup;
-  const cached = localStorage.getItem('md_top_artists');
-  if (!cached) return lineup;
-  const imageById = Object.fromEntries(JSON.parse(cached).map(a => [a.id, a.imageUrl ?? null]));
-  return lineup.map(a => ({ ...a, imageUrl: a.imageUrl ?? imageById[a.id] ?? null }));
-}
-
-// ── Persisted session state ───────────────────────────────────────────────────
-
-const PROFILE_KEY = 'md_profile';
-const INTENT_KEY  = 'md_intent';
-
-function saveProfile(profile) { localStorage.setItem(PROFILE_KEY, JSON.stringify(profile)); }
-function loadProfile()        { const r = localStorage.getItem(PROFILE_KEY); return r ? JSON.parse(r) : null; }
-function saveIntent(intent)   { localStorage.setItem(INTENT_KEY, intent); }
-function loadIntent()         { return localStorage.getItem(INTENT_KEY); }
-function clearSession()       { localStorage.removeItem(PROFILE_KEY); localStorage.removeItem(INTENT_KEY); }
-
-function clearAll() {
-  clearLineup();
-  clearLeague();
-  clearSnapshots();
-  clearSession();
-  clearTopArtistsCache();
-}
+import { scoreSeason } from './scoring.js';
+import {
+  saveProfile, loadProfile,
+  saveIntent, loadIntent,
+  saveLeague, getLeague,
+  saveLineup, getLineup, clearLineup,
+  saveSnapshot, getSnapshots,
+  clearAll,
+  getCurrentWeekNumber,
+  withImages,
+} from './store.js';
+import { ROUTES, navigate, renderRoute, autoNavigate, registerRoutes, markInitialLoadDone } from './router.js';
+import {
+  renderWelcome, renderEnterInviteCode, renderOnboarding, renderCreateLeague,
+  renderLeague, renderSpotifyConnect, renderDraft, renderBaselineEntry,
+  renderWeeklyUpdate, renderScore, renderLeagueSettings, renderSettings, renderLoading,
+} from './ui.js';
 
 // ── Handle generator ──────────────────────────────────────────────────────────
 
@@ -48,7 +33,7 @@ function generateHandle() {
   return `${a}${n}${num}`;
 }
 
-// ── Runtime state ─────────────────────────────────────────────────────────────
+// ── Mock join league data ─────────────────────────────────────────────────────
 
 const MOCK_JOIN_LEAGUE = {
   name: 'Indie Tastemakers',
@@ -59,106 +44,6 @@ const MOCK_JOIN_LEAGUE = {
   durationWeeks: 8,
   scheduledStartDate: (() => { const d = new Date(); d.setDate(d.getDate() + 3); return d.toISOString().split('T')[0]; })(),
 };
-
-// ── Routes ────────────────────────────────────────────────────────────────────
-
-const ROUTES = {
-  WELCOME:           '#welcome',
-  ENTER_INVITE_CODE: '#enter-invite-code',
-  ONBOARDING:        '#onboarding-profile',
-  CREATE_LEAGUE:     '#create-league',
-  SELECT_LEAGUE:     '#select-league',
-  SPOTIFY_CONNECT:   '#spotify-connect',
-  DRAFT:             '#draft-lineup',
-  BASELINE:          '#set-week-1-baseline',
-  WEEKLY_UPDATE:     '#weekly-update',
-  LEAGUE:            '#league/1',
-  LEAGUE_SETTINGS:   '#league-settings',
-  SETTINGS:          '#settings',
-};
-
-// ── Navigation helpers ────────────────────────────────────────────────────────
-
-let isInitialLoad = true;
-
-function navigate(hash, state = {}) {
-  const fullState = { route: hash, ...state };
-  if (isInitialLoad) {
-    history.replaceState(fullState, '', hash);
-    isInitialLoad = false;
-  } else {
-    history.pushState(fullState, '', hash);
-  }
-  renderRoute(hash, state);
-}
-
-window.addEventListener('popstate', (e) => {
-  const route = e.state?.route;
-  if (route) {
-    renderRoute(route, e.state);
-  } else {
-    autoNavigate();
-  }
-});
-
-// ── Route renderer ────────────────────────────────────────────────────────────
-
-async function renderRoute(route, state = {}) {
-  switch (route) {
-    case ROUTES.WELCOME:           return showWelcome();
-    case ROUTES.ENTER_INVITE_CODE: return showEnterInviteCode();
-    case ROUTES.ONBOARDING:        return showOnboarding();
-    case ROUTES.CREATE_LEAGUE:     return showCreateLeague();
-    case ROUTES.SELECT_LEAGUE:   return showSelectLeague();
-    case ROUTES.SPOTIFY_CONNECT: return showSpotifyConnect(state);
-    case ROUTES.DRAFT:           return showDraft(state.preSelected ?? [], state.appendMode ?? false);
-    case ROUTES.BASELINE:      return showBaselineEntry(withImages(getLineup()));
-    case ROUTES.WEEKLY_UPDATE: return showWeeklyUpdate(withImages(getLineup()), state.weekNumber);
-    case ROUTES.LEAGUE:          return showScore(withImages(getLineup()));
-    case ROUTES.LEAGUE_SETTINGS: return showLeagueSettings();
-    case ROUTES.SETTINGS:        return showSettings();
-    default:                   return autoNavigate();
-  }
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-// Returns true if the user hasn't yet been prompted to connect Spotify.
-// Once they connect or explicitly skip, spotifyConnected is set (true/false).
-function shouldPromptSpotify() {
-  return loadProfile()?.spotifyConnected === undefined;
-}
-
-// ── Auto-derive correct route from app state ──────────────────────────────────
-
-async function autoNavigate() {
-  const profile = loadProfile();
-
-  if (!profile) {
-    navigate(ROUTES.WELCOME);
-    return;
-  }
-
-  const league = getLeague();
-  if (!league) {
-    const intent = loadIntent();
-    navigate(intent === 'create' ? ROUTES.CREATE_LEAGUE : ROUTES.ENTER_INVITE_CODE);
-    return;
-  }
-
-  const role = getLeague()?.role;
-  const lineup = getLineup();
-  if (!lineup) {
-    if (role === 'member') {
-      navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
-    } else {
-      navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.DRAFT);
-    }
-    return;
-  }
-
-  navigate(ROUTES.LEAGUE);
-}
 
 // ── Screen functions ──────────────────────────────────────────────────────────
 
@@ -196,7 +81,7 @@ function showOnboarding() {
       if (intent === 'create') {
         navigate(ROUTES.CREATE_LEAGUE);
       } else if (getLeague()) {
-        navigate(shouldPromptSpotify() ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
+        navigate(loadProfile()?.spotifyConnected === undefined ? ROUTES.SPOTIFY_CONNECT : ROUTES.LEAGUE);
       } else {
         navigate(ROUTES.ENTER_INVITE_CODE);
       }
@@ -250,13 +135,12 @@ function showSpotifyConnect(state = {}) {
   const intent = loadIntent();
   const isJoin = intent === 'join';
   const backRoute = state.next === ROUTES.DRAFT ? ROUTES.LEAGUE : intent === 'create' ? ROUTES.LEAGUE : ROUTES.ONBOARDING;
-  // Caller can pass { next: ROUTES.DRAFT } to override the default post-connect destination
   const postConnectRoute = state.next ?? (isJoin ? ROUTES.LEAGUE : ROUTES.DRAFT);
   const hideSkip = postConnectRoute === ROUTES.DRAFT;
   renderSpotifyConnect(
     async () => {
       localStorage.setItem('md_oauth_next', postConnectRoute);
-      await login(); // redirects to Spotify — execution stops here
+      await login();
     },
     () => {
       saveProfile({ ...loadProfile(), spotifyConnected: false });
@@ -311,7 +195,7 @@ async function showDraft(preSelected = [], appendMode = false) {
   renderDraft(
     topArtists,
     (selected) => {
-      // In append mode, re-merge locked artists in case any weren't in the visible list
+      // In append mode, merge locked artists back in case any weren't in the visible list
       const merged = appendMode
         ? [...preSelected.filter(a => !selected.some(s => s.id === a.id)), ...selected]
         : selected;
@@ -342,7 +226,6 @@ function showBaselineEntry(lineup) {
   });
 }
 
-// overrideWeek lets the manual-update path bypass the date-derived week number
 async function showWeeklyUpdate(lineup, overrideWeek) {
   const league = getLeague();
   const weekNumber = overrideWeek ?? getCurrentWeekNumber(league?.startDate);
@@ -378,7 +261,6 @@ async function showScore(lineup) {
     : 0;
 
   const currentWeek = getCurrentWeekNumber(league?.scheduledStartDate ?? league?.startDate) ?? 1;
-
   const role = league?.role ?? 'commissioner';
 
   const displayLeague = {
@@ -484,6 +366,23 @@ function showLeagueSettings() {
   });
 }
 
+// ── Route registration ────────────────────────────────────────────────────────
+
+registerRoutes({
+  [ROUTES.WELCOME]:           () => showWelcome(),
+  [ROUTES.ENTER_INVITE_CODE]: () => showEnterInviteCode(),
+  [ROUTES.ONBOARDING]:        () => showOnboarding(),
+  [ROUTES.CREATE_LEAGUE]:     () => showCreateLeague(),
+  [ROUTES.SELECT_LEAGUE]:     () => showSelectLeague(),
+  [ROUTES.SPOTIFY_CONNECT]:   (state) => showSpotifyConnect(state),
+  [ROUTES.DRAFT]:             (state) => showDraft(state.preSelected ?? [], state.appendMode ?? false),
+  [ROUTES.BASELINE]:          () => showBaselineEntry(withImages(getLineup())),
+  [ROUTES.WEEKLY_UPDATE]:     (state) => showWeeklyUpdate(withImages(getLineup()), state.weekNumber),
+  [ROUTES.LEAGUE]:            () => showScore(withImages(getLineup())),
+  [ROUTES.LEAGUE_SETTINGS]:   () => showLeagueSettings(),
+  [ROUTES.SETTINGS]:          () => showSettings(),
+});
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -497,7 +396,7 @@ if (oauthCode) {
     .then(() => {
       saveProfile({ ...loadProfile(), spotifyConnected: true });
       history.replaceState({}, '', '/');
-      isInitialLoad = false;
+      markInitialLoadDone();
       const postOAuthRoute = localStorage.getItem('md_oauth_next') ?? (getLeague()?.role === 'member' ? ROUTES.LEAGUE : ROUTES.DRAFT);
       localStorage.removeItem('md_oauth_next');
       navigate(postOAuthRoute);
@@ -517,7 +416,7 @@ if (oauthCode) {
   const initialHash = location.hash;
   if (initialHash && Object.values(ROUTES).includes(initialHash)) {
     history.replaceState({ route: initialHash }, '', initialHash);
-    isInitialLoad = false;
+    markInitialLoadDone();
     renderRoute(initialHash, {});
   } else {
     autoNavigate();

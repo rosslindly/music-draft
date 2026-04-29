@@ -5,7 +5,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 ## Solo Alpha — Full Lifecycle (do these first, in order)
 
 - [x] league-create.md              Replace hardcoded MOCK_LEAGUE with real create flow + localStorage
-- [ ] localstorage-export.md        Export/import JSON backup as data safety net
+- [x] localstorage-export.md        Export/import JSON backup as data safety net (skipped — superseded by Supabase)
 - [x] monthly-listeners-model.md    Swap popularity (0–100) for monthlyListeners throughout data model
 - [x] listener-baseline-entry.md    Manual entry of Week 1 listener counts after drafting
 - [x] weekly-update-prompt.md       Friday prompt to enter updated listener counts each week
