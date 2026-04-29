@@ -32,6 +32,7 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [x] url-routing.md               Hash-based routing so Back button works and screens are deep-linkable
 - [x] avatar-placeholder-images.md Replace initial-letter avatars with placeholder people images throughout
 - [x] profile-header-settings.md   Show profile avatar and name in top right corner of main screens; build out a Settings screen
+- [ ] persist-weekly-scores.md  Lock in computed points to Supabase after each weekly snapshot; read standings from DB instead of re-deriving
 - [ ] draft-already-taken.md   Show some artists on the Draft screen as already claimed by other players and un-draftable
 - [x] edit-draft-picks.md      Add an Edit mode on the Score page to modify draft picks until the league Start Date has elapsed
 - [x] scoring-refactor.md      Proportional scoring based on monthly listeners (Alpha)
