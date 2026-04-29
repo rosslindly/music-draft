@@ -10,6 +10,7 @@
 //   md_spotify_*   — Spotify session tokens (managed by session.js)
 
 import * as db from './db.js';
+import { scoreSeason } from './scoring.js';
 
 const USER_ID_KEY   = 'md_user_id';
 const INTENT_KEY    = 'md_intent';
@@ -168,6 +169,29 @@ export async function lookupLeague(code) {
     durationWeeks: row.duration_weeks ?? null,
     createdAt: row.created_at,
   };
+}
+
+export async function loadOtherMembers() {
+  const leagueId = _state.league?.id;
+  if (!leagueId) return [];
+  const [members, allLineups, allSnapshots] = await Promise.all([
+    db.dbGetLeagueMembers(leagueId),
+    db.dbGetAllLineups(leagueId),
+    db.dbGetAllSnapshots(leagueId),
+  ]);
+  const lineupByUserId = Object.fromEntries(allLineups.map(l => [l.user_id, l.artists ?? []]));
+  const snapshotsByUserId = {};
+  for (const s of allSnapshots) {
+    (snapshotsByUserId[s.user_id] ??= []).push({ week: s.week_number, artists: s.artists });
+  }
+  const myId = getUserId();
+  return members
+    .filter(m => m.userId !== myId)
+    .map(m => {
+      const lineup = lineupByUserId[m.userId] ?? [];
+      const { totalPoints } = scoreSeason(snapshotsByUserId[m.userId] ?? []);
+      return { handle: m.handle, picks: lineup, totalPoints };
+    });
 }
 
 export function setPendingLeague(leagueData) {

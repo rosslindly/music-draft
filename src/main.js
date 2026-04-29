@@ -2,7 +2,6 @@
 
 import { login, handleCallback, logout } from './session.js';
 import { getTopArtists } from './data.js';
-import { MOCK_MEMBERS } from './fixtures.js';
 import { hasApifyToken, fetchListenerCounts } from './apify.js';
 import { scoreSeason } from './scoring.js';
 import {
@@ -16,6 +15,7 @@ import {
   clearAll, resetUserId,
   getCurrentWeekNumber,
   withImages,
+  loadOtherMembers,
 } from './store.js';
 import { ROUTES, navigate, renderRoute, autoNavigate, registerRoutes, markInitialLoadDone } from './router.js';
 import { canManageLeague, canEditLineup, canAddWeeklyArtist, shouldSkipDraftOnJoin } from './permissions.js';
@@ -234,6 +234,7 @@ async function showScore(lineup) {
   const profile = loadProfile();
   const league = getLeague();
   const snapshots = getSnapshots();
+  const otherMembers = await loadOtherMembers();
 
   const scheduledStart = league?.scheduledStartDate ? new Date(league.scheduledStartDate) : null;
   const todayMidnight = new Date();
@@ -261,7 +262,10 @@ async function showScore(lineup) {
     renderScore({
       results: [],
       totalPoints: 0,
-      standings: [{ handle: profile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true }],
+      standings: [
+        { handle: profile?.handle ?? '@you', picks: [], totalPoints: 0, isYou: true },
+        ...otherMembers,
+      ],
       league: displayLeague,
       role,
       leagueStarted: false,
@@ -279,8 +283,7 @@ async function showScore(lineup) {
     return;
   }
 
-  let results, totalPoints, memberStandings;
-  const isSolo = league?.teamCount === 1;
+  let results, totalPoints;
 
   if (leagueStarted) {
     const { results: seasonResults } = scoreSeason(snapshots);
@@ -290,7 +293,6 @@ async function showScore(lineup) {
       return s ? { ...s, imageUrl: a.imageUrl ?? null } : { id: a.id, name: a.name, points: 0, listenersThen: null, listenersNow: null, change: null, imageUrl: a.imageUrl ?? null };
     });
     totalPoints = parseFloat(results.reduce((s, r) => s + r.points, 0).toFixed(2));
-    memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
   } else {
     const week1 = snapshots.find(s => s.week === 1);
     const week1ById = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
@@ -299,12 +301,11 @@ async function showScore(lineup) {
       return { id: a.id, name: a.name, points: 0, change: null, listenersThen: baseline, listenersNow: baseline, imageUrl: a.imageUrl ?? null };
     });
     totalPoints = 0;
-    memberStandings = isSolo ? [] : MOCK_MEMBERS.map(m => ({ handle: m.handle, picks: m.lineup, totalPoints: 0 }));
   }
 
   const standings = [
     { handle: profile?.handle ?? '@you', picks: results, totalPoints, isYou: true },
-    ...memberStandings,
+    ...otherMembers,
   ];
   if (leagueStarted) standings.sort((a, b) => b.totalPoints - a.totalPoints);
 

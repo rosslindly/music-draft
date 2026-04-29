@@ -1355,6 +1355,10 @@ img.artist-avatar {
   flex-shrink: 0;
 }
 
+img.standings-avatar {
+  object-fit: cover;
+}
+
 .standings-pts {
   font-size: 0.95rem;
   font-weight: 700;

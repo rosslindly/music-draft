@@ -52,6 +52,35 @@ export async function dbAddLeagueMember(leagueId, userId, role) {
   if (error) throw error;
 }
 
+export async function dbGetLeagueMembers(leagueId) {
+  const { data } = await supabase
+    .from('league_members')
+    .select('user_id, role, users(handle)')
+    .eq('league_id', leagueId);
+  return (data ?? []).map(m => ({
+    userId: m.user_id,
+    role: m.role,
+    handle: m.users?.handle ?? m.user_id,
+  }));
+}
+
+export async function dbGetAllLineups(leagueId) {
+  const { data } = await supabase
+    .from('lineups')
+    .select('user_id, artists')
+    .eq('league_id', leagueId);
+  return data ?? [];
+}
+
+export async function dbGetAllSnapshots(leagueId) {
+  const { data } = await supabase
+    .from('listener_snapshots')
+    .select('user_id, week_number, artists')
+    .eq('league_id', leagueId)
+    .order('week_number', { ascending: true });
+  return data ?? [];
+}
+
 export async function dbGetLeagueByInviteCode(code) {
   const { data: league } = await supabase
     .from('leagues')

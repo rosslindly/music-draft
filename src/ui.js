@@ -846,6 +846,9 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
               <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
                 <span class="standings-rank">${leagueStarted ? i + 1 : '—'}</span>
                 <span class="standings-name">${escapeHtml(entry.handle)}${entry.isYou ? ' <span class="standings-you-tag">you</span>' : ''}</span>
+                <span class="standings-picks">
+                  ${(entry.picks ?? []).map(p => artistAvatar(p.name, p.id, p.imageUrl ?? null, 'standings-avatar')).join('')}
+                </span>
                 <span class="standings-pts${leagueStarted ? '' : ' standings-pts--pending'}">${leagueStarted ? `${fmtPts(entry.totalPoints)} <span class="standings-pts-label">pts</span>` : '—'}</span>
               </li>
             `).join('')}
