@@ -45,3 +45,4 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings
 - [ ] league-how-it-works.md   Add a "?" button next to Standings that opens a How It Works modal explaining draft and scoring rules
+- [ ] mobile-responsive-layout.md   Fix mobile layout regressions so all views are usable at 375px with no horizontal scroll

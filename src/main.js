@@ -150,7 +150,6 @@ function showSettings() {
       saveProfile({ ...loadProfile(), handle });
       const league = getLeague();
       if (league) saveLeague({ ...league, admin: handle });
-      showSettings();
     },
   });
 }
@@ -377,7 +376,6 @@ function showLeagueSettings() {
     onBack: () => history.back(),
     onSave({ name, scheduledStartDate }) {
       saveLeague({ ...league, name, scheduledStartDate });
-      history.back();
     },
     hasBaseline,
     onEnterBaseline: !hasBaseline && lineup ? () => navigate(ROUTES.BASELINE) : null,

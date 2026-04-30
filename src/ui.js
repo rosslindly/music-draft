@@ -979,6 +979,9 @@ export function renderLeagueSettings(league, { onBack, onSave, hasBaseline, onEn
     const name = nameInput.value.trim();
     if (!name) return;
     onSave({ name, scheduledStartDate: startDateInput.value || null });
+    saveBtn.textContent = 'Saved!';
+    saveBtn.disabled = true;
+    setTimeout(() => { saveBtn.textContent = 'Save Changes'; }, 2500);
   });
 
   if (onEnterBaseline) {
@@ -1073,6 +1076,10 @@ export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpot
     const handle = handleInput.value.trim();
     if (handle.length < 2) return;
     onSaveProfile({ handle: `@${handle}` });
+    document.querySelector('.settings-handle').textContent = `@${handle}`;
+    saveBtn.textContent = 'Saved!';
+    saveBtn.disabled = true;
+    setTimeout(() => { saveBtn.textContent = 'Save changes'; }, 2500);
   });
 }
 
