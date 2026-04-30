@@ -319,6 +319,8 @@ a:hover { text-decoration: underline; }
 
 .onboarding-handle-input::placeholder { color: var(--text-muted); font-weight: 400; }
 
+.onboarding-handle-wrap > .onboarding-handle-input:first-child { padding-left: 14px; }
+
 .onboarding-field-hint {
   font-size: 0.74rem;
   color: var(--text-muted);
@@ -1725,6 +1727,8 @@ img.settings-avatar { object-fit: cover; }
 }
 
 .settings-handle-input-field::placeholder { color: var(--text-muted); font-weight: 400; }
+
+.settings-handle-wrap > .settings-handle-input-field:first-child { padding-left: 14px; }
 
 .settings-save-btn {
   display: block;

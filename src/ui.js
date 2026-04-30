@@ -910,24 +910,28 @@ export function renderLeagueSettings(league, { onBack, onSave, hasBaseline, onEn
           <div class="settings-section-title">Details</div>
           <div class="settings-field">
             <label class="settings-field-label" for="ls-name-input">League Name</label>
-            <input
-              type="text"
-              id="ls-name-input"
-              class="settings-handle-input-field"
-              value="${escapeHtml(currentName)}"
-              maxlength="40"
-              autocomplete="off"
-              spellcheck="false"
-            />
+            <div class="settings-handle-wrap">
+              <input
+                type="text"
+                id="ls-name-input"
+                class="settings-handle-input-field"
+                value="${escapeHtml(currentName)}"
+                maxlength="40"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
           </div>
           <div class="settings-field">
             <label class="settings-field-label" for="ls-start-date-input">Start Date</label>
-            <input
-              type="date"
-              id="ls-start-date-input"
-              class="settings-handle-input-field"
-              value="${escapeHtml(currentStartDate)}"
-            />
+            <div class="settings-handle-wrap">
+              <input
+                type="date"
+                id="ls-start-date-input"
+                class="settings-handle-input-field"
+                value="${escapeHtml(currentStartDate)}"
+              />
+            </div>
           </div>
           <button class="settings-save-btn" id="ls-save-btn" disabled>Save Changes</button>
         </div>
