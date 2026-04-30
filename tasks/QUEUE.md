@@ -46,3 +46,4 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings
 - [ ] league-how-it-works.md   Add a "?" button next to Standings that opens a How It Works modal explaining draft and scoring rules
 - [ ] mobile-responsive-layout.md   Fix mobile layout regressions so all views are usable at 375px with no horizontal scroll
+- [ ] increase-base-lineup-size.md  Increase initial draft lineup from 3 to 5 artists; update weekly add cadence accordingly
