@@ -146,7 +146,7 @@ export function renderEnterInviteCode(onContinue, onBack) {
               maxlength="8"
               autocomplete="off"
               spellcheck="false"
-              style="text-transform:uppercase;letter-spacing:0.12em"
+              style="text-transform:uppercase;letter-spacing:0.12em;padding-left:14px"
             />
           </div>
           <p class="onboarding-field-hint" id="invite-error" style="display:none;color:#ef4444">Invalid invite code. Please try again.</p>
