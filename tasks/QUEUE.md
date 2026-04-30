@@ -44,3 +44,4 @@ Prioritized by dependency order. Tasks that others depend on come first.
 - [ ] streak-bonuses.md        Streak bonus points for consecutive weekly listener growth
 - [x] pre-start-standings.md   Show empty rankings and 0 points for all players in Standings before the league has started
 - [x] league-home-redesign.md  Redesign the Score page into a League Home with high-level league info, my lineup, and standings
+- [ ] league-how-it-works.md   Add a "?" button next to Standings that opens a How It Works modal explaining draft and scoring rules
