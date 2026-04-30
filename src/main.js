@@ -367,7 +367,10 @@ registerRoutes({
   [ROUTES.DRAFT]:             (state) => showDraft(state.preSelected ?? [], state.appendMode ?? false),
   [ROUTES.BASELINE]:          () => showBaselineEntry(withImages(getLineup())),
   [ROUTES.WEEKLY_UPDATE]:     (state) => showWeeklyUpdate(withImages(getLineup()), state.weekNumber),
-  [ROUTES.LEAGUE]:            () => showScore(withImages(getLineup())),
+  [ROUTES.LEAGUE]:            () => {
+    if (!loadProfile() || !getLeague()) { autoNavigate(); return; }
+    showScore(withImages(getLineup()));
+  },
   [ROUTES.LEAGUE_SETTINGS]:   () => showLeagueSettings(),
   [ROUTES.SETTINGS]:          () => showSettings(),
 });
