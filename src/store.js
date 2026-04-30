@@ -11,6 +11,7 @@
 
 import * as db from './db.js';
 import { scoreSeason } from './scoring.js';
+import { getNow, getTodayMidnight } from './clock.js';
 
 const USER_ID_KEY   = 'md_user_id';
 const INTENT_KEY    = 'md_intent';
@@ -159,8 +160,7 @@ export async function lookupLeague(code) {
   if (!row) return null;
 
   const scheduledStart = row.scheduled_start_date ? new Date(row.scheduled_start_date) : null;
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
+  const todayMidnight = getTodayMidnight();
   const daysUntilStart = scheduledStart != null
     ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))
     : '—';
@@ -352,7 +352,7 @@ export function clearAll() {
 export function getCurrentWeekNumber(startDate) {
   if (!startDate) return null;
   const start = new Date(startDate).getTime();
-  const now = Date.now();
+  const now = getNow();
   if (now < start) return null;
   return Math.floor((now - start) / (7 * 24 * 60 * 60 * 1000)) + 1;
 }

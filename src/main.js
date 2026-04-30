@@ -21,6 +21,7 @@ import {
   saveSnapshotForAllMembers,
 } from './store.js';
 import { ROUTES, navigate, renderRoute, autoNavigate, registerRoutes, markInitialLoadDone } from './router.js';
+import { getTodayMidnight } from './clock.js';
 import { canManageLeague, canEditLineup, canAddWeeklyArtist, shouldSkipDraftOnJoin } from './permissions.js';
 import {
   renderWelcome, renderEnterInviteCode, renderOnboarding, renderCreateLeague,
@@ -270,8 +271,7 @@ async function showScore(lineup) {
   const otherMembers = await loadOtherMembers();
 
   const scheduledStart = league?.scheduledStartDate ? new Date(league.scheduledStartDate) : null;
-  const todayMidnight = new Date();
-  todayMidnight.setHours(0, 0, 0, 0);
+  const todayMidnight = getTodayMidnight();
   const leagueStarted = snapshots.some(s => s.week > 1) || (scheduledStart !== null && todayMidnight >= scheduledStart);
   const daysUntilStart = scheduledStart
     ? Math.max(0, Math.ceil((scheduledStart - todayMidnight) / (1000 * 60 * 60 * 24)))

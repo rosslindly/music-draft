@@ -4,15 +4,11 @@ Fantasy sports for music fans. Draft artists from your Spotify listening history
 
 ## How it works
 
-1. **Join a league** — enter a league with friends (or mock members for now)
+1. **Join a league** — enter a league with friends using an invite code
 2. **Draft your roster** — pick artists from your Spotify top artists
-3. **Score points** — each artist earns points based on daily popularity changes:
-   - +3 points if popularity went up
-   - +1 point if popularity held steady
-   - 0 points if popularity dropped
-4. **Standings** — compare your total against league members
-
-Popularity is pulled live from Spotify, with a seeded daily delta applied to simulate real-world movement.
+3. **Score points** — each week, artists earn points based on growth in monthly listeners (tracked via Spotify/Apify)
+4. **Add artists** — each week after the league starts, you can add one new artist to your roster
+5. **Standings** — compare your total against league members
 
 ## Setup
 
@@ -43,6 +39,21 @@ Open [http://127.0.0.1:5173](http://127.0.0.1:5173) in your browser.
 
 > **Note:** Use `127.0.0.1`, not `localhost` — the redirect URI must match exactly.
 
-## Status
+## Dev tips
 
-The app currently uses mock artist data and mock league members. Spotify OAuth and live API integration are on the roadmap.
+### Time-based scenario testing
+
+To simulate a different date without changing your system clock, add `?devDate=YYYY-MM-DD` to the URL (dev builds only):
+
+```
+http://127.0.0.1:5173/?devDate=2026-05-07#league
+```
+
+| Scenario | devDate |
+|---|---|
+| Before league starts (edit lineup) | a date before scheduled start |
+| Week 1 | league's scheduled start date |
+| Week 2 (can add 1 artist) | start date + 7 days |
+| Week 3 (can add 2nd artist) | start date + 14 days |
+
+This is stripped out in production builds.
