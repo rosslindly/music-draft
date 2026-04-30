@@ -17,10 +17,17 @@ const supabase = createClient(url, key, {
 });
 
 // Delete in child-first order to respect foreign keys
-const tables = ['listener_snapshots', 'lineups', 'league_members', 'leagues', 'users'];
+// Each entry: [table, filter column] — use a non-null column that covers all rows
+const tables = [
+  ['listener_snapshots', 'league_id'],
+  ['lineups',            'league_id'],
+  ['league_members',     'league_id'],
+  ['leagues',            'id'],
+  ['users',              'id'],
+];
 
-for (const table of tables) {
-  const { error } = await supabase.from(table).delete().neq('id', 'x');
+for (const [table, col] of tables) {
+  const { error } = await supabase.from(table).delete().not(col, 'is', null);
   if (error) {
     console.error(`Failed to clear ${table}:`, error.message);
     process.exit(1);
