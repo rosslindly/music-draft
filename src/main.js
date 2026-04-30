@@ -17,6 +17,8 @@ import {
   withImages,
   loadOtherMembers,
   getTakenArtistIds,
+  loadAllMembersWithLineups,
+  saveSnapshotForAllMembers,
 } from './store.js';
 import { ROUTES, navigate, renderRoute, autoNavigate, registerRoutes, markInitialLoadDone } from './router.js';
 import { canManageLeague, canEditLineup, canAddWeeklyArtist, shouldSkipDraftOnJoin } from './permissions.js';
@@ -200,35 +202,64 @@ async function showDraft(preSelected = [], appendMode = false) {
   );
 }
 
-function showBaselineEntry(lineup) {
+async function showBaselineEntry() {
+  renderLoading('Loading lineups…');
+  const allMembers = await loadAllMembersWithLineups();
+
+  // Collect all unique artists across every member's lineup; track who drafted each
+  const artistMap = new Map();
+  const draftedBy = {};
+  for (const m of allMembers) {
+    for (const a of m.lineup) {
+      if (!artistMap.has(a.id)) artistMap.set(a.id, a);
+      draftedBy[a.id] = draftedBy[a.id] ? `${draftedBy[a.id]}, ${m.handle}` : m.handle;
+    }
+  }
+  const allArtists = withImages([...artistMap.values()]).map(a => ({ ...a, draftedBy: draftedBy[a.id] ?? null }));
+
   const week1 = getSnapshots().find(s => s.week === 1);
   const saved = week1 ? Object.fromEntries(week1.artists.map(a => [a.id, a.monthlyListeners])) : {};
   const existing = Object.fromEntries(
-    lineup.map(a => [a.id, saved[a.id] ?? a.monthlyListeners ?? undefined])
+    allArtists.map(a => [a.id, saved[a.id] ?? a.monthlyListeners ?? undefined])
   );
-  renderBaselineEntry(lineup, existing, (entries) => {
-    saveSnapshot(1, entries);
+
+  renderBaselineEntry(allArtists, existing, async (entries) => {
+    await saveSnapshotForAllMembers(1, entries);
     navigate(ROUTES.LEAGUE);
   });
 }
 
-async function showWeeklyUpdate(lineup, overrideWeek) {
+async function showWeeklyUpdate(overrideWeek) {
   const league = getLeague();
   const weekNumber = overrideWeek ?? getCurrentWeekNumber(league?.startDate);
+
+  renderLoading('Loading lineups…');
+  const allMembers = await loadAllMembersWithLineups();
+
+  // Collect all unique artists across every member's lineup; track who drafted each
+  const artistMap = new Map();
+  const draftedBy = {};
+  for (const m of allMembers) {
+    for (const a of m.lineup) {
+      if (!artistMap.has(a.id)) artistMap.set(a.id, a);
+      draftedBy[a.id] = draftedBy[a.id] ? `${draftedBy[a.id]}, ${m.handle}` : m.handle;
+    }
+  }
+  const allArtists = withImages([...artistMap.values()]).map(a => ({ ...a, draftedBy: draftedBy[a.id] ?? null }));
 
   let prefilled = {};
   if (hasApifyToken()) {
     renderLoading('Fetching live listener counts…');
     try {
-      prefilled = await fetchListenerCounts(lineup);
+      prefilled = await fetchListenerCounts(allArtists);
     } catch (err) {
       console.warn('Apify fetch failed, proceeding without prefill:', err);
     }
     if (window.location.hash !== ROUTES.WEEKLY_UPDATE) return;
   }
 
-  renderWeeklyUpdate(lineup, weekNumber, prefilled, (entries) => {
-    saveSnapshot(weekNumber, entries);
+  renderWeeklyUpdate(allArtists, weekNumber, prefilled, async (entries) => {
+    await saveSnapshotForAllMembers(weekNumber, entries);
     navigate(ROUTES.LEAGUE);
   });
 }
@@ -365,8 +396,8 @@ registerRoutes({
   [ROUTES.SELECT_LEAGUE]:     (state) => showSelectLeague(state.leagueData),
   [ROUTES.SPOTIFY_CONNECT]:   (state) => showSpotifyConnect(state),
   [ROUTES.DRAFT]:             (state) => showDraft(state.preSelected ?? [], state.appendMode ?? false),
-  [ROUTES.BASELINE]:          () => showBaselineEntry(withImages(getLineup())),
-  [ROUTES.WEEKLY_UPDATE]:     (state) => showWeeklyUpdate(withImages(getLineup()), state.weekNumber),
+  [ROUTES.BASELINE]:          () => showBaselineEntry(),
+  [ROUTES.WEEKLY_UPDATE]:     (state) => showWeeklyUpdate(state.weekNumber),
   [ROUTES.LEAGUE]:            () => {
     if (!loadProfile() || !getLeague()) { autoNavigate(); return; }
     showScore(withImages(getLineup()));

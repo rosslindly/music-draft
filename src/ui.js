@@ -466,6 +466,7 @@ export function renderBaselineEntry(lineup, existing, onSubmit) {
               ${artistAvatar(a.name, a.id, a.imageUrl, 'baseline-avatar')}
               <div class="baseline-artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
+                ${a.draftedBy ? `<div class="lh-artist-listeners">${escapeHtml(a.draftedBy)}</div>` : ''}
               </div>
               <input
                 type="text"
@@ -525,6 +526,7 @@ export function renderWeeklyUpdate(lineup, weekNumber, prefilled = {}, onSubmit)
               ${artistAvatar(a.name, a.id, a.imageUrl, 'baseline-avatar')}
               <div class="baseline-artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
+                ${a.draftedBy ? `<div class="lh-artist-listeners">${escapeHtml(a.draftedBy)}</div>` : ''}
               </div>
               <input
                 type="text"

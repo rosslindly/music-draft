@@ -209,6 +209,51 @@ export async function loadOtherMembers() {
   });
 }
 
+export async function loadAllMembersWithLineups() {
+  const leagueId = _state.league?.id;
+  if (!leagueId) return [];
+  const [members, allLineups] = await Promise.all([
+    db.dbGetLeagueMembers(leagueId),
+    db.dbGetAllLineups(leagueId),
+  ]);
+  const lineupByUserId = Object.fromEntries(allLineups.map(l => [l.user_id, l.artists ?? []]));
+  return members.map(m => ({
+    userId: m.userId,
+    handle: m.handle,
+    lineup: lineupByUserId[m.userId] ?? [],
+  }));
+}
+
+export async function saveSnapshotForAllMembers(weekNumber, entries) {
+  const leagueId = _state.league?.id;
+  if (!leagueId) return;
+  const listenerById = Object.fromEntries(entries.map(e => [e.id, e.monthlyListeners]));
+  const [members, allLineups] = await Promise.all([
+    db.dbGetLeagueMembers(leagueId),
+    db.dbGetAllLineups(leagueId),
+  ]);
+  const lineupByUserId = Object.fromEntries(allLineups.map(l => [l.user_id, l.artists ?? []]));
+
+  await Promise.all(members.map(m => {
+    const memberArtists = (lineupByUserId[m.userId] ?? [])
+      .filter(a => listenerById[a.id] != null)
+      .map(a => ({ id: a.id, name: a.name, monthlyListeners: listenerById[a.id] }));
+    if (memberArtists.length === 0) return Promise.resolve();
+    return db.dbSaveSnapshot(leagueId, m.userId, weekNumber, memberArtists);
+  }));
+
+  // Update in-memory snapshot for the commissioner's own scoring view
+  const myId = getUserId();
+  const myArtists = (lineupByUserId[myId] ?? _state.lineup ?? [])
+    .filter(a => listenerById[a.id] != null)
+    .map(a => ({ id: a.id, name: a.name, monthlyListeners: listenerById[a.id] }));
+  if (myArtists.length > 0) {
+    const snapshot = { week: weekNumber, savedAt: new Date().toISOString(), artists: myArtists };
+    _state.snapshots = _state.snapshots.filter(s => s.week !== weekNumber);
+    _state.snapshots.push(snapshot);
+  }
+}
+
 export async function getTakenArtistIds() {
   const league = _state.league;
   if (!league?.id || (league.teamCount ?? 1) <= 1) return new Map();
