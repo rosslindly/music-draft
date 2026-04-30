@@ -122,7 +122,13 @@ export async function dbGetLeagueForUser(userId) {
     .limit(1)
     .maybeSingle();
   if (!data) return null;
-  return { ...data.leagues, role: data.role };
+
+  const { count } = await supabase
+    .from('league_members')
+    .select('*', { count: 'exact', head: true })
+    .eq('league_id', data.leagues.id);
+
+  return { ...data.leagues, role: data.role, memberCount: count ?? 1 };
 }
 
 // ── Artists ───────────────────────────────────────────────────────────────────

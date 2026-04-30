@@ -77,7 +77,7 @@ function _mapLeague(row) {
     startDate: row.start_date ?? null,
     scheduledStartDate: row.scheduled_start_date ?? null,
     durationWeeks: row.duration_weeks ?? null,
-    teamCount: 1, // computed from members — hardcoded for solo alpha
+    teamCount: row.memberCount ?? 1,
     maxTeams: row.max_teams ?? 10,
     createdAt: row.created_at,
   };
