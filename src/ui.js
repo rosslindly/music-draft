@@ -861,7 +861,7 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
                 <span class="standings-rank">${leagueStarted ? i + 1 : '—'}</span>
                 <span class="standings-name">${escapeHtml(entry.handle)}</span>
                 <span class="standings-picks">
-                  ${(entry.picks ?? []).map(p => artistAvatar(p.name, p.id, p.imageUrl ?? null, 'standings-avatar')).join('')}
+                  ${(entry.picks ?? []).map(p => `<a class="standings-artist-link" href="https://open.spotify.com/artist/${escapeHtml(p.id)}" target="_blank" rel="noopener noreferrer" data-tooltip="${escapeHtml(p.name)}">${artistAvatar(p.name, p.id, p.imageUrl ?? null, 'standings-avatar')}</a>`).join('')}
                 </span>
                 <span class="standings-pts${leagueStarted ? '' : ' standings-pts--pending'}">${leagueStarted ? `${fmtPts(entry.totalPoints)} <span class="standings-pts-label">pts</span>` : '—'}</span>
               </li>

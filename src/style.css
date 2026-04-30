@@ -1374,6 +1374,40 @@ img.standings-avatar {
   object-fit: cover;
 }
 
+.standings-artist-link {
+  position: relative;
+  display: inline-flex;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.standings-artist-link::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.82);
+  color: #fff;
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+  z-index: 10;
+}
+
+.standings-artist-link:hover::after {
+  opacity: 1;
+}
+
+.standings-artist-link:hover .standings-avatar {
+  outline: 2px solid #1db954;
+  outline-offset: 1px;
+}
+
 .standings-pts {
   font-size: 0.95rem;
   font-weight: 700;
