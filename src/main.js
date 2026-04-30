@@ -16,6 +16,7 @@ import {
   getCurrentWeekNumber,
   withImages,
   loadOtherMembers,
+  getTakenArtistIds,
 } from './store.js';
 import { ROUTES, navigate, renderRoute, autoNavigate, registerRoutes, markInitialLoadDone } from './router.js';
 import { canManageLeague, canEditLineup, canAddWeeklyArtist, shouldSkipDraftOnJoin } from './permissions.js';
@@ -176,6 +177,7 @@ async function showDraft(preSelected = [], appendMode = false) {
   const lockedIds = appendMode ? new Set(preSelected.map(a => a.id)) : new Set();
   const maxPicks = appendMode ? preSelected.length + 1 : 3;
   const profile = loadProfile();
+  const takenIds = await getTakenArtistIds();
   renderDraft(
     topArtists,
     (selected) => {
@@ -194,7 +196,7 @@ async function showDraft(preSelected = [], appendMode = false) {
     preSelected,
     profile,
     () => { navigate(ROUTES.SETTINGS); },
-    { lockedIds, maxPicks },
+    { lockedIds, maxPicks, takenIds },
   );
 }
 

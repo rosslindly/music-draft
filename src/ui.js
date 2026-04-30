@@ -620,7 +620,7 @@ export function renderSpotifyConnect(onConnect, onSkip, onBack, showConnected = 
 
 // --- Draft View ---
 
-export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile = null, onProfile = null, { lockedIds = new Set(), maxPicks = 3 } = {}) {
+export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile = null, onProfile = null, { lockedIds = new Set(), maxPicks = 3, takenIds = new Map() } = {}) {
   const preSelectedIds = new Set(preSelected.map(a => a.id));
   const isAppending = lockedIds.size > 0;
   const isEditing = preSelected.length > 0;
@@ -642,15 +642,19 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
         <ul class="artist-list" id="artist-list">
           ${artists.map((a, i) => {
             const isLocked = lockedIds.has(a.id);
+            const isTaken = !isLocked && takenIds.has(a.id);
             const isSelected = preSelectedIds.has(a.id);
-            const cls = isLocked ? ' selected locked' : isSelected ? ' selected' : '';
+            const cls = isLocked ? ' selected locked' : isTaken ? ' taken' : isSelected ? ' selected' : '';
+            const takenByHandle = isTaken ? takenIds.get(a.id) : null;
             return `
             <li class="artist-card${cls}" data-id="${escapeHtml(a.id)}">
               <div class="artist-rank">#${i + 1}</div>
               ${artistAvatar(a.name, a.id, a.imageUrl)}
               <div class="artist-info">
                 <div class="artist-name">${escapeHtml(a.name)}</div>
-                ${a.monthlyListeners != null ? `<div class="artist-listeners">${fmtListeners(a.monthlyListeners)} monthly listeners</div>` : ''}
+                ${isTaken
+                  ? `<div class="artist-taken-label">Taken by ${escapeHtml(takenByHandle)}</div>`
+                  : a.monthlyListeners != null ? `<div class="artist-listeners">${fmtListeners(a.monthlyListeners)} monthly listeners</div>` : ''}
               </div>
               <div class="artist-select">
                 <input type="checkbox"
@@ -660,7 +664,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
                   data-image-url="${escapeHtml(a.imageUrl ?? '')}"
                   data-spotify-url="${escapeHtml(a.spotifyUrl ?? '')}"
                   ${isSelected || isLocked ? 'checked' : ''}
-                  ${isLocked ? 'disabled' : ''} />
+                  ${isLocked || isTaken ? 'disabled' : ''} />
               </div>
             </li>
           `}).join('')}
@@ -693,7 +697,7 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
 
   cards.forEach(card => {
     card.addEventListener('click', () => {
-      if (card.classList.contains('locked')) return;
+      if (card.classList.contains('locked') || card.classList.contains('taken')) return;
       const cb = card.querySelector('input[type="checkbox"]');
       const already = card.classList.contains('selected');
       const total = [...cards].filter(c => c.classList.contains('selected')).length;

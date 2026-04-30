@@ -209,6 +209,25 @@ export async function loadOtherMembers() {
   });
 }
 
+export async function getTakenArtistIds() {
+  const league = _state.league;
+  if (!league?.id || (league.teamCount ?? 1) <= 1) return new Map();
+  const myId = getUserId();
+  const [members, allLineups] = await Promise.all([
+    db.dbGetLeagueMembers(league.id),
+    db.dbGetAllLineups(league.id),
+  ]);
+  const lineupByUserId = Object.fromEntries(allLineups.map(l => [l.user_id, l.artists ?? []]));
+  const taken = new Map();
+  for (const m of members) {
+    if (m.userId === myId) continue;
+    for (const artist of lineupByUserId[m.userId] ?? []) {
+      if (!taken.has(artist.id)) taken.set(artist.id, m.handle);
+    }
+  }
+  return taken;
+}
+
 export function setPendingLeague(leagueData) {
   _state.league = { ...leagueData, role: 'member' };
   _state.lineup = null;
