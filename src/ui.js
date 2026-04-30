@@ -657,6 +657,8 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
                   value="${escapeHtml(a.id)}"
                   data-name="${escapeHtml(a.name)}"
                   data-listeners="${a.monthlyListeners ?? ''}"
+                  data-image-url="${escapeHtml(a.imageUrl ?? '')}"
+                  data-spotify-url="${escapeHtml(a.spotifyUrl ?? '')}"
                   ${isSelected || isLocked ? 'checked' : ''}
                   ${isLocked ? 'disabled' : ''} />
               </div>
@@ -713,7 +715,13 @@ export function renderDraft(artists, onLockIn, onBack, preSelected = [], profile
       .map(c => {
         const cb = c.querySelector('input[type="checkbox"]');
         const listeners = cb.dataset.listeners ? Number(cb.dataset.listeners) : null;
-        return { id: cb.value, name: cb.dataset.name, monthlyListeners: listeners };
+        return {
+          id: cb.value,
+          name: cb.dataset.name,
+          monthlyListeners: listeners,
+          imageUrl: cb.dataset.imageUrl || null,
+          spotifyUrl: cb.dataset.spotifyUrl || null,
+        };
       });
     onLockIn(selected);
   });

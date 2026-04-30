@@ -48,7 +48,7 @@ export async function dbUpdateLeague(leagueId, { name, startDate, scheduledStart
 export async function dbAddLeagueMember(leagueId, userId, role) {
   const { error } = await supabase
     .from('league_members')
-    .upsert({ league_id: leagueId, user_id: userId, role });
+    .upsert({ league_id: leagueId, user_id: userId, role }, { onConflict: 'league_id,user_id' });
   if (error) throw error;
 }
 
@@ -163,7 +163,7 @@ export async function dbSaveLineup(leagueId, userId, artists) {
     user_id: userId,
     artists,
     updated_at: new Date().toISOString(),
-  });
+  }, { onConflict: 'league_id,user_id' });
   if (error) throw error;
 }
 
@@ -186,7 +186,7 @@ export async function dbSaveSnapshot(leagueId, userId, weekNumber, artists) {
     week_number: weekNumber,
     artists,
     recorded_at: new Date().toISOString(),
-  });
+  }, { onConflict: 'league_id,user_id,week_number' });
   if (error) throw error;
 }
 
