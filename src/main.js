@@ -142,6 +142,8 @@ function showSpotifyConnect(state = {}) {
 
 function showSettings() {
   const profile = loadProfile();
+  const league = getLeague();
+  const role = league?.role ?? 'commissioner';
   renderSettings(profile, {
     onBack: () => history.back(),
     onSignOut() { logout(); clearAll(); navigate(ROUTES.WELCOME); },
@@ -149,9 +151,11 @@ function showSettings() {
     onSpotifyConnect() { navigate(ROUTES.SPOTIFY_CONNECT); },
     onSaveProfile({ handle }) {
       saveProfile({ ...loadProfile(), handle });
-      const league = getLeague();
-      if (league) saveLeague({ ...league, admin: handle });
+      const lg = getLeague();
+      if (lg) saveLeague({ ...lg, admin: handle });
     },
+    isCommissioner: canManageLeague(role),
+    onLeagueSettings: canManageLeague(role) ? () => navigate(ROUTES.LEAGUE_SETTINGS) : null,
   });
 }
 

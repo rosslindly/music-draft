@@ -970,7 +970,7 @@ img.artist-avatar {
   min-height: 100vh;
 }
 
-.results-header {
+.lh-header {
   width: 100%;
   display: flex;
   align-items: center;
@@ -981,61 +981,22 @@ img.artist-avatar {
   position: sticky;
   top: 0;
   z-index: 100;
+  gap: 12px;
 }
 
-.header-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 700;
-  font-size: 0.95rem;
-}
-
-.header-user {
+.lh-header-left {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.lh-banner {
-  width: 100%;
-  background: linear-gradient(to bottom, rgba(124, 58, 237, 0.1), transparent);
-  border-bottom: 1px solid var(--border);
-  padding: 20px 24px;
-}
-
-.lh-banner-inner {
-  max-width: 680px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.lh-banner-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
   min-width: 0;
 }
 
-.lh-league-badge-wrap {
-  flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: rgba(124, 58, 237, 0.15);
-  border: 1px solid rgba(124, 58, 237, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+.lh-league-icon { flex-shrink: 0; }
 
-.lh-league-info { min-width: 0; }
+.lh-header-info { min-width: 0; }
 
 .lh-league-name {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   white-space: nowrap;
@@ -1043,61 +1004,32 @@ img.artist-avatar {
   text-overflow: ellipsis;
 }
 
-.lh-league-meta {
+.lh-header-sub {
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin-top: 2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.lh-role-badge {
-  display: inline-block;
-  margin-top: 5px;
-  padding: 2px 8px;
-  border-radius: 99px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.lh-role-badge--commissioner {
-  background: rgba(124, 58, 237, 0.12);
-  color: var(--accent);
-}
-
-.lh-role-badge--member {
-  background: rgba(100, 116, 139, 0.12);
-  color: var(--text-muted);
-}
-
-.lh-score-block {
+.lh-avatar-btn {
   flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.lh-content-spacer { height: 8px; }
+
+.lh-settings-row {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 0 24px;
   text-align: right;
-}
-
-.lh-score-pts {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-}
-
-.lh-score-pts-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.lh-score-rank {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.lh-score-pts--pending {
-  color: var(--text-muted);
-  font-size: 1.2rem;
 }
 
 .lh-content {
@@ -1203,6 +1135,11 @@ img.artist-avatar {
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: 12px;
+}
+
+.lh-standings-meta {
+  font-size: 0.75rem;
+  color: var(--text-muted);
 }
 
 .lh-artist-card {
@@ -1845,10 +1782,10 @@ img.settings-avatar { object-fit: cover; }
 
 /* === Responsive === */
 @media (max-width: 600px) {
-  .lh-banner { padding: 16px; }
+  .lh-header { padding: 12px 16px; }
+  .lh-settings-row { padding: 0 16px; }
   .lh-content { padding: 0 16px 64px; }
   .standings-name { min-width: 64px; }
-  .results-header { padding: 12px 16px; }
   .artist-meta { gap: 8px; }
   .draft-container { padding: 24px 16px 100px; }
   .league-card { padding: 32px 20px 28px; }

@@ -759,54 +759,25 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
   const isCommissioner = canManageLeague(role);
   const userRank = standings.findIndex(e => e.isYou) + 1;
 
+  const handle = profile?.handle ?? '@you';
+  const ptsDisplay = leagueStarted ? `${fmtPts(totalPoints)} pts` : league.daysUntilStart > 0 ? `Begins in ${league.daysUntilStart}d` : `Week ${league.currentWeek}${league.durationWeeks ? ' of ' + league.durationWeeks : ''}`;
+
   app.innerHTML = `
     <div class="view-league-home">
-      <header class="results-header">
-        <div class="header-brand">
-          <svg class="logo-icon-sm" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="11" cy="11" r="11" fill="#7c3aed" fill-opacity="0.15"/>
-            <path d="M6 15 Q11 6 16 15" stroke="#7c3aed" stroke-width="2" stroke-linecap="round" fill="none"/>
-            <circle cx="11" cy="8" r="2" fill="#7c3aed"/>
+      <header class="lh-header">
+        <div class="lh-header-left">
+          <svg class="lh-league-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22">
+            <path d="M24 4 L40 12 L40 26 C40 36 24 44 24 44 C24 44 8 36 8 26 L8 12 Z"
+              fill="#7c3aed" fill-opacity="0.3" stroke="#7c3aed" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M18 23 L22 27 L30 19" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Music Draft
+          <div class="lh-header-info">
+            <div class="lh-league-name">${escapeHtml(league.name)}</div>
+            <div class="lh-header-sub">${escapeHtml(handle)}: ${ptsDisplay}</div>
+          </div>
         </div>
-        <div class="header-user">
-          ${profile ? profileChipHtml(profile) : ''}
-        </div>
+        <button class="lh-avatar-btn" id="profile-chip-btn">${userAvatarHtml(profile)}</button>
       </header>
-
-      <div class="lh-banner">
-        <div class="lh-banner-inner">
-          <div class="lh-banner-left">
-            <div class="lh-league-badge-wrap">
-              <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22">
-                <path d="M24 4 L40 12 L40 26 C40 36 24 44 24 44 C24 44 8 36 8 26 L8 12 Z"
-                  fill="#7c3aed" fill-opacity="0.3" stroke="#7c3aed" stroke-width="1.5" stroke-linejoin="round"/>
-                <path d="M18 23 L22 27 L30 19" stroke="#7c3aed" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            <div class="lh-league-info">
-              <div class="lh-league-name">${escapeHtml(league.name)}</div>
-              <div class="lh-league-meta">${escapeHtml(league.admin)}, Commissioner · ${league.teamCount} / ${league.maxTeams} teams</div>
-              <div class="lh-league-meta-row">
-                <div class="lh-role-badge lh-role-badge--${isCommissioner ? 'commissioner' : 'member'}">${isCommissioner ? 'Commissioner' : 'Member'}</div>
-                ${isCommissioner ? `<button class="lh-settings-link" id="lh-settings-btn">League Settings</button>` : ''}
-              </div>
-            </div>
-          </div>
-          <div class="lh-score-block">
-            ${leagueStarted
-              ? `<div class="lh-score-pts">${fmtPts(totalPoints)}<span class="lh-score-pts-label"> pts</span></div>
-            <div class="lh-score-rank">#${userRank} of ${standings.length}</div>`
-              : league.daysUntilStart > 0
-                ? `<div class="lh-score-pts lh-score-pts--pending">—</div>
-            <div class="lh-score-rank">Starts in ${league.daysUntilStart}d</div>`
-                : `<div class="lh-score-pts lh-score-pts--pending">—</div>
-            <div class="lh-score-rank">Week ${league.currentWeek}${league.durationWeeks ? ' of ' + league.durationWeeks : ''}</div>`
-            }
-          </div>
-        </div>
-      </div>
 
       <div class="lh-content">
 
@@ -854,7 +825,10 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
         </section>
 
         <section class="lh-section">
-          <h3 class="lh-section-title">Standings</h3>
+          <div class="lh-section-header">
+            <h3 class="lh-section-title">Standings</h3>
+            <span class="lh-standings-meta">${leagueStarted && userRank > 0 ? `Rank: #${userRank} of ${standings.length}` : league.daysUntilStart > 0 ? `Begins in ${league.daysUntilStart} days` : ''}</span>
+          </div>
           <ul class="standings-list">
             ${standings.map((entry, i) => `
               <li class="standings-row${entry.isYou ? ' standings-row--you' : ''}">
@@ -890,9 +864,6 @@ export function renderScore({ results, totalPoints, standings, league, role, lea
     });
   });
 
-  if (isCommissioner && onLeagueSettings) {
-    document.getElementById('lh-settings-btn')?.addEventListener('click', onLeagueSettings);
-  }
 }
 
 // --- League Settings View ---
@@ -1004,7 +975,7 @@ export function renderLeagueSettings(league, { onBack, onSave, hasBaseline, onEn
 
 // --- Settings View ---
 
-export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpotifyConnect, onSaveProfile }) {
+export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpotifyConnect, onSaveProfile, isCommissioner = false, onLeagueSettings = null }) {
   const spotifyConnected = profile?.spotifyConnected === true;
   const currentHandle = (profile?.handle ?? '@').replace('@', '');
   app.innerHTML = `
@@ -1048,6 +1019,13 @@ export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpot
           </div>
         </div>
 
+        ${isCommissioner ? `
+        <div class="settings-section">
+          <div class="settings-section-title">League</div>
+          <button class="settings-row-action" id="settings-league-btn">League Settings</button>
+        </div>
+        ` : ''}
+
         <div class="settings-section">
           <div class="settings-section-title">Account</div>
           <button class="settings-danger-btn" id="settings-signout-btn">Sign Out</button>
@@ -1060,6 +1038,9 @@ export function renderSettings(profile, { onBack, onSignOut, onStartOver, onSpot
   document.getElementById('settings-back-btn').addEventListener('click', onBack);
   document.getElementById('settings-signout-btn').addEventListener('click', onSignOut);
   document.getElementById('settings-startover-btn').addEventListener('click', onStartOver);
+  if (isCommissioner && onLeagueSettings) {
+    document.getElementById('settings-league-btn')?.addEventListener('click', onLeagueSettings);
+  }
   if (!spotifyConnected) {
     document.getElementById('settings-spotify-btn')?.addEventListener('click', onSpotifyConnect);
   }
